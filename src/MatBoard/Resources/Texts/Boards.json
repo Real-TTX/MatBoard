@@ -129,11 +129,26 @@
   "About.Channel.Nightly": { "en": "Development (nightly)", "de": "Entwicklung (nightly)" },
   "About.Channel.Local": { "en": "Local build", "de": "Lokaler Build" },
   "About.Shortcuts": { "en": "Keyboard shortcuts", "de": "Tastaturkürzel" },
-  "About.Shortcuts.Text": { "en": "V select · H move the view · N sticky note · T text · R/O/D/G shapes · L connector · P pen · F frame · I picture · Space+drag pan · Ctrl+Z undo · Ctrl+Y redo · Ctrl+D duplicate · Ctrl+C/X/V clipboard · Delete remove · + − 0 1 zoom.", "de": "V auswählen · H Ansicht verschieben · N Haftnotiz · T Text · R/O/D/G Formen · L Verbindung · P Stift · F Rahmen · I Bild · Leertaste+Ziehen verschieben · Strg+Z rückgängig · Strg+Y wiederholen · Strg+D duplizieren · Strg+C/X/V Zwischenablage · Entf löschen · + − 0 1 zoomen." },
+  "About.Shortcuts.Text": { "en": "V select · H move the view · N sticky note · T text · R/O/D/G shapes · L connector · P pen · F frame · C comment · S stamp · I picture · M overview map · Ctrl+F search · Ctrl+Shift+L lock · Alt while moving: no alignment · Space+drag pan · Ctrl+Z undo · Ctrl+Y redo · Ctrl+D duplicate · Ctrl+C/X/V clipboard · Delete remove · + − 0 1 zoom.", "de": "V auswählen · H Ansicht verschieben · N Haftnotiz · T Text · R/O/D/G Formen · L Verbindung · P Stift · F Rahmen · C Kommentar · S Stempel · I Bild · M Übersichtskarte · Strg+F suchen · Strg+Umschalt+L sperren · Alt beim Verschieben: ohne Ausrichten · Leertaste+Ziehen verschieben · Strg+Z rückgängig · Strg+Y wiederholen · Strg+D duplizieren · Strg+C/X/V Zwischenablage · Entf löschen · + − 0 1 zoomen." },
   "About.Family": { "en": "Part of the Mat family of apps. Sign-in through MatIdentity and mail through MatSMTP when Mattiverse connects them.", "de": "Teil der Mat-App-Familie. Anmeldung über MatIdentity und E-Mail über MatSMTP, wenn Mattiverse sie verbindet." },
   "About.Author": { "en": "Made by Matthias Schmoldt.", "de": "Entwickelt von Matthias Schmoldt." },
 
   "Mail.Share.Subject": { "en": "{0} shared the board “{1}” with you", "de": "{0} hat das Board „{1}“ mit dir geteilt" },
   "Mail.Share.Editor": { "en": "{0} invited you to work on the board “{1}”.\n\nOpen it here: {2}\n", "de": "{0} hat dich eingeladen, auf dem Board „{1}“ zu arbeiten.\n\nHier öffnen: {2}\n" },
-  "Mail.Share.Viewer": { "en": "{0} shared the board “{1}” with you. You can look at it.\n\nOpen it here: {2}\n", "de": "{0} hat das Board „{1}“ mit dir geteilt. Du kannst es ansehen.\n\nHier öffnen: {2}\n" }
+  "Mail.Share.Viewer": { "en": "{0} shared the board “{1}” with you. You can look at it.\n\nOpen it here: {2}\n", "de": "{0} hat das Board „{1}“ mit dir geteilt. Du kannst es ansehen.\n\nHier öffnen: {2}\n" },
+
+  "Canvas.Tool.Comment": { "en": "Comment", "de": "Kommentar" },
+  "Canvas.Tool.Stamp": { "en": "Stamp", "de": "Stempel" },
+  "Canvas.Templates": { "en": "Templates", "de": "Vorlagen" },
+  "Canvas.Summon": { "en": "Bring everybody here", "de": "Alle zu mir holen" },
+  "Canvas.Search": { "en": "Search the board", "de": "Board durchsuchen" },
+  "Canvas.Comments": { "en": "Comments", "de": "Kommentare" },
+  "Canvas.Frames": { "en": "Frames and presenting", "de": "Frames und Präsentieren" },
+  "Canvas.Minimap": { "en": "Overview map", "de": "Übersichtskarte" },
+  "Canvas.Close": { "en": "Close", "de": "Schließen" },
+  "Canvas.Present": { "en": "Presentation", "de": "Präsentation" },
+  "Canvas.Present.Prev": { "en": "Previous frame", "de": "Vorheriger Frame" },
+  "Canvas.Present.Next": { "en": "Next frame", "de": "Nächster Frame" },
+  "Canvas.Present.Exit": { "en": "End presentation", "de": "Präsentation beenden" },
+  "Canvas.Follow.Stop": { "en": "Stop following", "de": "Nicht mehr folgen" }
 }

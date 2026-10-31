@@ -167,6 +167,59 @@ public sealed class BoardItemTests
     }
 
     [DbFact]
+    public async Task Comments_and_stamps_are_checked()
+    {
+        await using var t = await TestDatabase.CreateAsync();
+        var owner = await t.AddUserAsync("Olga");
+        var board = (await BoardService.CreateAsync(t.Db, owner.Id, "Plan", null, null, null)).Value!;
+        var actor = Actor.Of(owner.Id);
+        JsonObject Thread(params string[] texts) => new() { ["msgs"] = new JsonArray([.. texts.Select(x => (JsonNode)new JsonObject { ["a"] = "Olga", ["t"] = x })]) };
+
+        var good = await BoardItems.ApplyAsync(t.Db, actor, board.Id, [Add(Guid.NewGuid(), "comment", Thread("Looks good")), Add(Guid.NewGuid(), "stamp", new JsonObject { ["e"] = "+1" })]);
+        Assert.Equal(2, good.Accepted.Count);
+
+        var bad = await BoardItems.ApplyAsync(t.Db, actor, board.Id,
+        [
+            Add(Guid.NewGuid(), "comment", Thread()),
+            Add(Guid.NewGuid(), "comment", Thread(new string('x', 2001))),
+            Add(Guid.NewGuid(), "comment", new JsonObject { ["msgs"] = new JsonArray(new JsonObject { ["a"] = new string('a', 61), ["t"] = "Hi" }) }),
+            Add(Guid.NewGuid(), "stamp", new JsonObject { ["e"] = "" }),
+            Add(Guid.NewGuid(), "stamp", new JsonObject()),
+        ]);
+        Assert.Empty(bad.Accepted);
+        Assert.Equal(5, bad.Rejected.Count);
+    }
+
+    [DbFact]
+    public async Task A_locked_item_only_accepts_being_unlocked()
+    {
+        await using var t = await TestDatabase.CreateAsync();
+        var owner = await t.AddUserAsync("Olga");
+        var board = (await BoardService.CreateAsync(t.Db, owner.Id, "Plan", null, null, null)).Value!;
+        var actor = Actor.Of(owner.Id);
+        var id = Guid.NewGuid();
+        await BoardItems.ApplyAsync(t.Db, actor, board.Id, [Add(id)]);
+        await BoardItems.ApplyAsync(t.Db, actor, board.Id, [JsonNode.Parse($$$"""{"o":"upd","id":"{{{id}}}","d":{"lock":true}}""")]);
+
+        var refused = await BoardItems.ApplyAsync(t.Db, actor, board.Id,
+        [
+            JsonNode.Parse($$$"""{"o":"upd","id":"{{{id}}}","x":500}"""),
+            JsonNode.Parse($$$"""{"o":"upd","id":"{{{id}}}","d":{"text":"Changed","lock":null}}"""),
+            Add(id),
+            JsonNode.Parse($$$"""{"o":"del","id":"{{{id}}}"}"""),
+        ]);
+        Assert.Empty(refused.Accepted);
+        Assert.All(refused.Rejected, r => Assert.Equal("locked", r));
+        var item = (await BoardItems.LoadAsync(t.Db, actor, board.Id))!.Items.Single();
+        Assert.Equal(10, item.X);
+        Assert.Equal("Hi", item.D["text"]!.GetValue<string>());
+
+        var unlocked = await BoardItems.ApplyAsync(t.Db, actor, board.Id, [JsonNode.Parse($$$"""{"o":"upd","id":"{{{id}}}","d":{"lock":null}}""")]);
+        Assert.Single(unlocked.Accepted);
+        Assert.Single((await BoardItems.ApplyAsync(t.Db, actor, board.Id, [JsonNode.Parse($$$"""{"o":"upd","id":"{{{id}}}","x":500}""")])).Accepted);
+    }
+
+    [DbFact]
     public async Task Duplicate_copies_the_items_and_connects_the_copies()
     {
         await using var t = await TestDatabase.CreateAsync();

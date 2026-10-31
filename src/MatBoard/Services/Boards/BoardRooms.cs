@@ -189,6 +189,17 @@ public sealed class BoardRooms(IServiceScopeFactory scopes, ILogger<BoardRooms> 
             case "cur" when json["x"] is JsonValue x && json["y"] is JsonValue y && x.TryGetValue<double>(out var cx) && y.TryGetValue<double>(out var cy) && double.IsFinite(cx) && double.IsFinite(cy):
                 await BroadcastAsync(room, peer.Id, new JsonObject { ["t"] = "cur", ["id"] = peer.Id, ["x"] = Math.Round(cx, 1), ["y"] = Math.Round(cy, 1) });
                 break;
+            // where somebody looks (for the people who follow them), and "come here" (everybody jumps to the view of an editor or the owner)
+            case "view" or "summon" when ViewOf(json) is { } view:
+                if (type == "summon" && peer.Role < BoardRole.Editor)
+                {
+                    break;
+                }
+
+                view["t"] = type;
+                view["id"] = peer.Id;
+                await BroadcastAsync(room, peer.Id, view);
+                break;
             case "ping":
                 await SendAsync(peer, new JsonObject { ["t"] = "pong" });
                 break;
@@ -234,6 +245,23 @@ public sealed class BoardRooms(IServiceScopeFactory scopes, ILogger<BoardRooms> 
                 ["ops"] = new JsonArray(result.Accepted.Select(o => (JsonNode?)o.DeepClone()).ToArray()),
             });
         }
+    }
+
+    /// <summary>A rectangle of the board (x, y, width, height), checked; or <c>null</c>.</summary>
+    private static JsonObject? ViewOf(JsonObject json)
+    {
+        var view = new JsonObject();
+        foreach (var key in new[] { "x", "y", "w", "h" })
+        {
+            if (json[key] is not JsonValue v || !v.TryGetValue<double>(out var value) || !double.IsFinite(value) || Math.Abs(value) > 1e7 || (key is "w" or "h" && value <= 0))
+            {
+                return null;
+            }
+
+            view[key] = Math.Round(value, 1);
+        }
+
+        return view;
     }
 
     /// <summary>More than 400 messages in ten seconds from one browser: the rest is dropped (a script gone wrong, or somebody who is not a person).</summary>

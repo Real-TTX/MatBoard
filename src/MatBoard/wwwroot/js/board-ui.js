@@ -30,6 +30,14 @@
   // ---- tools -----------------------------------------------------------------------------------------------------------------
   var toolButtons = Array.from(root.querySelectorAll('[data-tool]'));
   var shapesPop = document.getElementById('mb-shapes-pop'), shapesBtn = document.getElementById('mb-shapes-btn');
+  var stampPop = document.getElementById('mb-stamp-pop'), stampBtn = document.getElementById('mb-stamp-btn');
+  MB.STAMPS.forEach(function (e) {
+    var b = MB.html('button', 'mb-tool mb-tool--emoji', stampPop);
+    b.type = 'button';
+    b.textContent = e;
+    b.setAttribute('aria-label', e);
+    b.addEventListener('click', function () { S.stamp = e; stampBtn.querySelector('.mb-tool__emoji').textContent = e; closePops(); setTool('stamp'); });
+  });
 
   function setTool(name) {
     if (!S.canEdit() && name !== 'select' && name !== 'hand') { name = 'select'; }
@@ -51,8 +59,10 @@
   toolButtons.forEach(function (b) {
     b.addEventListener('click', function () {
       var name = b.getAttribute('data-tool');
-      if (name === 'shape') { shapesPop.hidden = !shapesPop.hidden; shapesBtn.setAttribute('aria-expanded', String(!shapesPop.hidden)); return; }
+      if (name === 'shape') { stampPop.hidden = true; shapesPop.hidden = !shapesPop.hidden; shapesBtn.setAttribute('aria-expanded', String(!shapesPop.hidden)); return; }
+      if (b === stampBtn) { shapesPop.hidden = true; stampPop.hidden = !stampPop.hidden; stampBtn.setAttribute('aria-expanded', String(!stampPop.hidden)); return; }
       shapesPop.hidden = true;
+      stampPop.hidden = true;
       setTool(name);
     });
   });
@@ -122,10 +132,13 @@
 
   function handleSet(it) {
     if (it.k === 'text') { return ['e', 'w']; }
-    if (it.k === 'sticky' || it.k === 'image' || it.k === 'pen') { return ['nw', 'ne', 'se', 'sw']; }
+    if (it.k === 'comment') { return []; }
+    if (it.k === 'sticky' || it.k === 'image' || it.k === 'pen' || it.k === 'stamp') { return ['nw', 'ne', 'se', 'sw']; }
     return Object.keys(HANDLES);
   }
-  function canRotate(it) { return it.k !== 'frame' && it.k !== 'line'; }
+  function canRotate(it) { return it.k !== 'frame' && it.k !== 'line' && it.k !== 'comment'; }
+  function canQuickConnect(it) { return (it.k === 'sticky' || MB.isShape(it.k)) && !it.r; }
+  var QUICK = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 
   function drawOverlay() {
     overlay.textContent = '';
@@ -140,7 +153,11 @@
     } else if (items.length === 1) {
       var it = items[0], cs = MB.corners(it);
       sv('polygon', { points: screenPts(cs), 'class': 'mb-sel' });
-      if (edit && !(drag && (drag.type === 'move'))) {
+      if (MB.isLocked(it)) {
+        var lockBox = MB.aabb(it), lockAt = MB.toScreen(lockBox.x + lockBox.w, lockBox.y);
+        var badge = MB.el('svg', { x: lockAt.x - 9, y: lockAt.y - 24, width: 18, height: 18, viewBox: '0 0 24 24', 'class': 'mb-lockbadge' }, overlay);
+        MB.el('use', { href: '#mat-i-lock' }, badge);
+      } else if (edit && !(drag && (drag.type === 'move'))) {
         var c = MB.center(it);
         handleSet(it).forEach(function (name) {
           var h = HANDLES[name], p = MB.rotPt(h[0] * it.w / 2, h[1] * it.h / 2, it.r || 0), s = MB.toScreen(c.x + p.x, c.y + p.y);
@@ -154,6 +171,14 @@
           var rot = sv('circle', { cx: s1.x, cy: s1.y, r: 6, 'class': 'mb-handle mb-handle--rotate', 'data-handle': 'rotate', 'pointer-events': 'all' });
           rot.style.cursor = 'grab';
         }
+        if (canQuickConnect(it) && !drag) {
+          Object.keys(QUICK).forEach(function (dir) {
+            var v = QUICK[dir], at = MB.toScreen(c.x + v[0] * it.w / 2, c.y + v[1] * it.h / 2);
+            var q = sv('circle', { cx: at.x + v[0] * 26, cy: at.y + v[1] * 26, r: 8, 'class': 'mb-handle mb-handle--quick', 'data-handle': 'qc-' + dir, 'pointer-events': 'all' });
+            q.style.cursor = 'copy';
+            MB.el('title', {}, q).textContent = t('Js.Board.QuickConnect');
+          });
+        }
       }
     } else if (items.length > 1) {
       var bb = MB.bounds(items.map(function (i) { return i.id; })), tl = MB.toScreen(bb.x, bb.y);
@@ -161,6 +186,13 @@
       items.forEach(function (i) { var box = MB.aabb(i), s = MB.toScreen(box.x, box.y); sv('rect', { x: s.x, y: s.y, width: box.w * k, height: box.h * k, 'class': 'mb-sel mb-sel--each' }); });
     }
 
+    if (drag && drag.guides) {
+      var size = MB.canvasRect();
+      drag.guides.forEach(function (g) {
+        var at = g.v ? MB.toScreen(g.at, 0).x : MB.toScreen(0, g.at).y;
+        sv('line', g.v ? { x1: at, y1: 0, x2: at, y2: size.height, 'class': 'mb-guide' } : { x1: 0, y1: at, x2: size.width, y2: at, 'class': 'mb-guide' });
+      });
+    }
     if (drag && drag.type === 'marquee') {
       var m = drag.rect;
       sv('rect', { x: m.x, y: m.y, width: m.w, height: m.h, 'class': 'mb-marquee' });
@@ -240,6 +272,12 @@
     }
 
     if (!S.canEdit()) { return; }
+    if (tool === 'comment') { setTool('select'); MB.emit('comment:new', p); return; }
+    if (tool === 'stamp') {
+      var stamp = MB.newItem('stamp', { x: r2(p.x - 32), y: r2(p.y - 32), d: { e: S.stamp || MB.STAMPS[0] } });
+      MB.act([{ o: 'add', i: stamp }]);
+      return;
+    }
     if (tool === 'line') {
       var from = MB.itemAt(p.x, p.y, { connectable: true });
       drag = { type: 'line', start: p, fromItem: from, to: p, toItem: null, snap: from ? from.id : null };
@@ -267,7 +305,7 @@
         break;
       }
       case 'marquee': moveMarquee(screenOf(e), e.shiftKey); break;
-      case 'move': moveItems(p); break;
+      case 'move': moveItems(p, e.altKey); break;
       case 'resize': resizeTo(p, e.shiftKey); break;
       case 'rotate': rotateTo(p, e.shiftKey); break;
       case 'end': moveEnd(p); break;
@@ -379,14 +417,15 @@
 
   // ---- moving ------------------------------------------------------------------------------------------------------------------
   function startMove(p, hit) {
-    var ids = Array.from(S.sel), all = new Set(ids);
+    var ids = Array.from(S.sel).filter(function (id) { return !MB.isLocked(S.items.get(id)); }), all = new Set(ids);
+    if (!ids.length) { drag = null; return; }
     // a frame takes what lies inside it along
     ids.forEach(function (id) {
       var it = S.items.get(id);
       if (!it || it.k !== 'frame') { return; }
       var f = MB.aabb(it);
       S.items.forEach(function (o) {
-        if (o.id === id || o.k === 'frame' || all.has(o.id)) { return; }
+        if (o.id === id || o.k === 'frame' || all.has(o.id) || MB.isLocked(o)) { return; }
         var b = MB.aabb(o);
         if (b.x >= f.x && b.y >= f.y && b.x + b.w <= f.x + f.w && b.y + b.h <= f.y + f.h) { all.add(o.id); }
       });
@@ -394,13 +433,42 @@
     var orig = {};
     all.forEach(function (id) { var it = S.items.get(id); orig[id] = { x: it.x, y: it.y, a: it.d.a ? MB.clone(it.d.a) : null, b: it.d.b ? MB.clone(it.d.b) : null, ends: it.k === 'line' ? MB.lineEnds(it) : null }; });
     drag = { type: 'move', start: p, ids: Array.from(all), all: all, orig: orig, moved: false, hit: hit };
+    // what the moved things can line up with: the other things in view (edges and centres)
+    var solid = drag.ids.filter(function (id) { var it = S.items.get(id); return it.k !== 'line' && it.k !== 'comment'; });
+    drag.box = solid.length ? MB.bounds(solid) : null;
+    var view = MB.canvasRect(), a = MB.toWorld(view.left, view.top), b = MB.toWorld(view.right, view.bottom);
+    drag.targets = [];
+    S.items.forEach(function (it) {
+      if (all.has(it.id) || it.k === 'line' || it.k === 'pen' || it.k === 'comment') { return; }
+      var box = MB.aabb(it);
+      if (box.x > b.x || box.y > b.y || box.x + box.w < a.x || box.y + box.h < a.y || drag.targets.length > 400) { return; }
+      drag.targets.push(box);
+    });
     ctxBar.hidden = true;
   }
 
-  function moveItems(p) {
+  /** Pulls a move onto the edges and centres of other things when it comes close (6 pixels on screen); the guides show it. Alt moves freely. */
+  function snapMove(d, dx, dy, free) {
+    d.guides = null;
+    if (!d.box || free) { return { dx: dx, dy: dy }; }
+    var th = 6 / S.view.k, b = { x: d.box.x + dx, y: d.box.y + dy, w: d.box.w, h: d.box.h };
+    var xs = [b.x, b.x + b.w / 2, b.x + b.w], ys = [b.y, b.y + b.h / 2, b.y + b.h], bx = null, by = null;
+    d.targets.forEach(function (o) {
+      [o.x, o.x + o.w / 2, o.x + o.w].forEach(function (w) { xs.forEach(function (v) { var diff = w - v; if (Math.abs(diff) <= th && (!bx || Math.abs(diff) < Math.abs(bx.diff))) { bx = { diff: diff, at: w }; } }); });
+      [o.y, o.y + o.h / 2, o.y + o.h].forEach(function (w) { ys.forEach(function (v) { var diff = w - v; if (Math.abs(diff) <= th && (!by || Math.abs(diff) < Math.abs(by.diff))) { by = { diff: diff, at: w }; } }); });
+    });
+    d.guides = [];
+    if (bx) { dx += bx.diff; d.guides.push({ v: true, at: bx.at }); }
+    if (by) { dy += by.diff; d.guides.push({ v: false, at: by.at }); }
+    return { dx: dx, dy: dy };
+  }
+
+  function moveItems(p, free) {
     var d = drag, dx = p.x - d.start.x, dy = p.y - d.start.y;
     if (!d.moved && Math.hypot(dx, dy) * S.view.k < 3) { return; }
     d.moved = true;
+    var snapped = snapMove(d, dx, dy, free);
+    dx = snapped.dx; dy = snapped.dy;
     d.ops = [];
     d.ids.forEach(function (id) {
       var o = d.orig[id], it = S.items.get(id);
@@ -441,6 +509,7 @@
   function startHandle(name, p, e) {
     var it = sel()[0];
     if (!it) { return; }
+    if (name.indexOf('qc-') === 0) { quickConnect(it, name.slice(3)); return; }
     var orig = { x: it.x, y: it.y, w: it.w, h: it.h, r: it.r || 0, d: it.k === 'line' ? { a: it.d.a ? MB.clone(it.d.a) : null, b: it.d.b ? MB.clone(it.d.b) : null } : null };
     if (name === 'rotate') { drag = { type: 'rotate', id: it.id, orig: orig, start: p }; }
     else if (name === 'a' || name === 'b') {
@@ -504,6 +573,21 @@
     else if (d.type === 'rotate') { back.r = d.orig.r; }
     else { back.d = {}; back.d[d.end] = d.orig.d[d.end] ? MB.clone(d.orig.d[d.end]) : { x: d.ends[d.end].x, y: d.ends[d.end].y }; }
     MB.record([d.patch], [back]);
+  }
+
+  /** Miro's blue dots: a new thing of the same kind next to this one (in a direction), connected to it, ready to be written on. */
+  function quickConnect(it, dir) {
+    var v = QUICK[dir], gap = 80;
+    var data = MB.clone(it.d);
+    delete data.text; delete data.lock;
+    var copy = MB.newItem(it.k, { x: r2(it.x + v[0] * (it.w + gap)), y: r2(it.y + v[1] * (it.h + gap)), w: it.w, h: it.h, d: data });
+    var a = MB.center(it), b = { x: copy.x + copy.w / 2, y: copy.y + copy.h / 2 };
+    var line = MB.newItem('line', { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), d: { a: { id: it.id, x: r2(a.x), y: r2(a.y) }, b: { id: copy.id, x: r2(b.x), y: r2(b.y) } } });
+    MB.act([{ o: 'add', i: copy }, { o: 'add', i: line }]);
+    MB.select([copy.id]);
+    var s = MB.toScreen(b.x, b.y), r = MB.canvasRect();
+    if (s.x < 40 || s.y < 80 || s.x > r.width - 40 || s.y > r.height - 80) { MB.setView({ x: S.view.x - (s.x - r.width / 2), y: S.view.y - (s.y - r.height / 2), k: S.view.k }); }
+    startEdit(copy.id, 'text');
   }
 
   // ---- creating --------------------------------------------------------------------------------------------------------------------
@@ -584,7 +668,7 @@
 
   function startEdit(id, field) {
     var it = S.items.get(id);
-    if (!it || !S.canEdit()) { return; }
+    if (!it || !S.canEdit() || MB.isLocked(it)) { return; }
     endEdit(true);
     S.editing = { id: id, field: field, before: field === 'title' ? (it.d.title || '') : (it.d.text || '') };
     editor.value = S.editing.before;
@@ -718,6 +802,20 @@
 
     var first = items[0], pop = null;
     var group = function () { var g = MB.html('span', 'mb-ctx__group', ctxBar); return g; };
+    if (allOf(items, function (i) { return i.k === 'comment'; })) { ctxBar.hidden = true; return; }
+    if (items.some(MB.isLocked)) {
+      group().appendChild(button('unlock', t('Js.Board.Unlock'), function () { setLock(false); }));
+      placeCtx();
+      return;
+    }
+    if (allOf(items, function (i) { return i.k === 'stamp'; })) {
+      var gs = group();
+      MB.STAMPS.slice(0, 6).forEach(function (e) {
+        var sb2 = textButton(e, e, function () { patchSelection(function () { return { d: { e: e } }; }); });
+        if (first.d.e === e) { sb2.classList.add('is-active'); }
+        gs.appendChild(sb2);
+      });
+    }
 
     if (allOf(items, isFilled)) {
       var g1 = group(), swatchBtn = button('palette', t('Js.Board.Fill'), function () { ctxPop = ctxPop === 'fill' ? null : 'fill'; renderCtx(); }, ctxPop === 'fill');
@@ -775,6 +873,7 @@
       g6.appendChild(button('send-back', t('Js.Board.Back'), function () { order(false); }));
     }
     g6.appendChild(button('copy', t('Js.Board.Duplicate'), duplicate));
+    g6.appendChild(button('lock', t('Js.Board.Lock'), function () { setLock(true); }));
     var del = button('trash', t('Js.Board.Delete'), deleteSelection);
     del.classList.add('mb-ctx__btn--danger');
     g6.appendChild(del);
@@ -795,6 +894,11 @@
     ctxBar.style.top = y + 'px';
   }
   window.addEventListener('resize', function () { scheduleOverlay(); placeEditor(); });
+
+  function setLock(on) {
+    patchSelection(function (it) { return MB.isLocked(it) === on ? null : { d: { lock: on ? true : null } }; });
+    scheduleOverlay();
+  }
 
   function fontStep(dir) {
     patchSelection(function (it) {
@@ -823,12 +927,12 @@
 
   // ---- delete, duplicate, copy and paste -----------------------------------------------------------------------------------------
   function deleteSelection() {
-    var items = sel();
+    var items = sel().filter(function (i) { return !MB.isLocked(i); });
     if (!items.length || !S.canEdit()) { return; }
     var gone = new Set(items.map(function (i) { return i.id; })), ops = [];
     // a connector that stays loses its end: it stays where it was, loose
     S.items.forEach(function (line) {
-      if (line.k !== 'line' || gone.has(line.id)) { return; }
+      if (line.k !== 'line' || gone.has(line.id) || MB.isLocked(line)) { return; }
       var patch = {}, e = MB.lineEnds(line);
       if (line.d.a && line.d.a.id && gone.has(line.d.a.id)) { patch.a = { x: r2(e.a.x), y: r2(e.a.y) }; }
       if (line.d.b && line.d.b.id && gone.has(line.d.b.id)) { patch.b = { x: r2(e.b.x), y: r2(e.b.y) }; }
@@ -997,7 +1101,7 @@
     var svg = MB.el('svg', { xmlns: 'http://www.w3.org/2000/svg', width: w, height: h, viewBox: [x, y, w, h].join(' ') });
     MB.el('rect', { x: x, y: y, width: w, height: h, fill: getComputedStyle(canvas).backgroundColor || '#ffffff' }, svg);
     var g = MB.el('g', {}, svg);
-    Array.from(S.world.children).forEach(function (n) { g.appendChild(n.cloneNode(true)); });
+    Array.from(S.world.children).forEach(function (n) { if (n.getAttribute('data-kind') !== 'comment') { g.appendChild(n.cloneNode(true)); } });
     return { svg: svg, w: w, h: h };
   }
   function exportAs(kind) {
@@ -1023,12 +1127,12 @@
   Array.from(document.querySelectorAll('[data-export]')).forEach(function (b) { b.addEventListener('click', function () { exportAs(b.getAttribute('data-export')); }); });
 
   // ---- keys ------------------------------------------------------------------------------------------------------------------------------
-  function closePops() { shapesPop.hidden = true; shapesBtn.setAttribute('aria-expanded', 'false'); if (ctxPop) { ctxPop = null; renderCtx(); } }
+  function closePops() { shapesPop.hidden = true; shapesBtn.setAttribute('aria-expanded', 'false'); stampPop.hidden = true; stampBtn.setAttribute('aria-expanded', 'false'); if (ctxPop) { ctxPop = null; renderCtx(); } }
   document.addEventListener('pointerdown', function (e) {
-    if (!shapesPop.hidden && !e.target.closest('.mb-tools__shapes')) { closePops(); }
+    if ((!shapesPop.hidden || !stampPop.hidden) && !e.target.closest('.mb-tools__shapes')) { closePops(); }
   });
 
-  var TOOL_KEYS = { v: 'select', h: 'hand', n: 'sticky', t: 'text', r: 'rect', o: 'ellipse', d: 'diamond', g: 'triangle', l: 'line', p: 'pen', f: 'frame' };
+  var TOOL_KEYS = { v: 'select', h: 'hand', n: 'sticky', t: 'text', r: 'rect', o: 'ellipse', d: 'diamond', g: 'triangle', l: 'line', p: 'pen', f: 'frame', c: 'comment', s: 'stamp' };
 
   document.addEventListener('keydown', function (e) {
     if (isTyping(e.target) || document.querySelector('dialog[open]')) { return; }
@@ -1040,6 +1144,7 @@
       else if (lower === 'y') { e.preventDefault(); MB.redo(); }
       else if (lower === 'd') { e.preventDefault(); duplicate(); }
       else if (lower === 'a') { e.preventDefault(); MB.select(Array.from(S.items.keys())); }
+      else if (lower === 'l' && e.shiftKey && S.sel.size && S.canEdit()) { e.preventDefault(); setLock(!sel().every(MB.isLocked)); }
       return;
     }
     if (e.altKey) { return; }
@@ -1054,7 +1159,7 @@
       e.preventDefault();
       var step = e.shiftKey ? 10 : 1, dx = key === 'ArrowLeft' ? -step : key === 'ArrowRight' ? step : 0, dy = key === 'ArrowUp' ? -step : key === 'ArrowDown' ? step : 0;
       var ops = [];
-      sel().forEach(function (it) {
+      sel().filter(function (i) { return !MB.isLocked(i); }).forEach(function (it) {
         if (it.k === 'line') {
           var ends = MB.lineEnds(it), patch = {};
           ['a', 'b'].forEach(function (end) { if (!(it.d[end] && it.d[end].id)) { patch[end] = { x: r2(ends[end].x + dx), y: r2(ends[end].y + dy) }; } });
@@ -1076,6 +1181,9 @@
   });
   document.addEventListener('keyup', function (e) { if (e.key === ' ') { spaceDown = false; canvas.classList.remove('is-hand'); } });
   window.addEventListener('blur', function () { spaceDown = false; canvas.classList.remove('is-hand'); });
+
+  // ---- for board-extras.js (panels: templates, comments, frames, search, minimap, follow) ----
+  MB.ui = { setTool: setTool, startEdit: startEdit, endEdit: endEdit, toast: toast, selected: sel, isTyping: isTyping, closePops: closePops };
 
   // ---- the first look -----------------------------------------------------------------------------------------------------------------
   zoomValue.textContent = '100%';

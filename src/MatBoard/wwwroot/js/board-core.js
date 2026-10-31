@@ -94,9 +94,13 @@
     line: { w: 0, h: 0, d: { sw: 3, ah: 'end', st: 'straight' } },
     pen: { w: 0, h: 0, d: { sw: 4 } },
     image: { w: 320, h: 240, d: {} },
+    comment: { w: 36, h: 36, d: { msgs: [] } },
+    stamp: { w: 64, h: 64, d: { e: '👍' } },
   };
+  MB.STAMPS = ['👍', '👎', '❤️', '⭐', '✅', '❌', '❓', '🔥', '💡', '🎉', '+1', '🤔'];
   MB.defaults = function (kind) { return clone(DEFAULTS[kind]); };
   MB.hasText = function (k) { return k === 'sticky' || k === 'text' || k === 'rect' || k === 'ellipse' || k === 'diamond' || k === 'triangle'; };
+  MB.isLocked = function (it) { return !!(it && it.d && it.d.lock === true); };
   MB.isShape = function (k) { return k === 'rect' || k === 'ellipse' || k === 'diamond' || k === 'triangle'; };
 
   /** A new item of a kind at a place (not yet added: act([{o:'add', i:item}]) does that). Frames go behind everything, the rest in front. */
@@ -283,7 +287,7 @@
     for (var i = list.length - 1; i >= 0; i--) {
       var it = list[i];
       if (opts.exclude && it.id === opts.exclude) { continue; }
-      if (opts.connectable && (it.k === 'line' || it.k === 'pen' || it.k === 'frame')) { continue; }
+      if (opts.connectable && (it.k === 'line' || it.k === 'pen' || it.k === 'frame' || it.k === 'comment')) { continue; }
       if (contains(it, x, y, margin)) { return it; }
     }
     return null;
@@ -369,6 +373,20 @@
         MB.el('rect', { width: it.w, height: it.h, fill: '#e9ecef', 'pointer-events': 'all' }, g);
       }
     },
+  };
+  /** A comment: a pin (a speech bubble) with the number of messages; a resolved thread is drawn pale. */
+  builders.comment = function (g, it) {
+    var d = it.d, n = (d.msgs || []).length, color = d.done ? '#adb5bd' : '#ffc21f';
+    MB.el('path', { d: 'M4 2h28a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H14l-8 6v-6H4a4 4 0 0 1-4-4V6a4 4 0 0 1 4-4z', fill: color, stroke: '#1d1600', 'stroke-width': 1.5, 'stroke-opacity': 0.35, 'pointer-events': 'all' }, g);
+    var label = MB.el('text', { x: 18, y: 21, 'text-anchor': 'middle', 'font-family': FONT, 'font-size': 14, 'font-weight': 700, fill: '#1d1600', 'pointer-events': 'none' }, g);
+    label.textContent = n > 99 ? '99+' : String(Math.max(1, n));
+  };
+  /** A stamp: an emoji (or a short text such as +1), as large as the item. */
+  builders.stamp = function (g, it) {
+    MB.el('rect', { width: it.w, height: it.h, fill: 'transparent', 'pointer-events': 'all' }, g);
+    var e = String(it.d.e || '').slice(0, 16), fs = it.h * (/^[\w+-]+$/.test(e) ? 0.5 : 0.8);
+    var label = MB.el('text', { x: it.w / 2, y: it.h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-family': FONT, 'font-size': fs, 'font-weight': 700, fill: ink(null), 'pointer-events': 'none' }, g);
+    label.textContent = e;
   };
   builders.rect = builders.ellipse = builders.diamond = builders.triangle = builders.shape;
 

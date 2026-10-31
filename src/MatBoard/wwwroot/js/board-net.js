@@ -219,7 +219,9 @@
         if (typeof m.rev === 'number' && m.rev > S.rev) { resync(); } else { schedule(); }
         break;
       case 'peer+': peers.set(m.peer.id, m.peer); renderPresence(); break;
-      case 'peer-': peers.delete(m.id); renderPresence(); break;
+      case 'peer-': peers.delete(m.id); renderPresence(); if (S.following === m.id) { MB.emit('follow', null); } break;
+      case 'view': MB.emit('peer:view', m); break;
+      case 'summon': MB.emit('summon', m); break;
       case 'cur': {
         var p = peers.get(m.id);
         if (p) { p.x = m.x; p.y = m.y; placeCursor(p); }
@@ -271,10 +273,14 @@
     presence.textContent = '';
     var list = Array.from(peers.values()).filter(function (p) { return p.id !== you; });
     list.slice(0, 4).forEach(function (p) {
-      var chip = MB.html('span', 'mb-avatar', presence);
+      // a click on a person follows their view (Miro: "follow"); another click stops it
+      var chip = MB.html('button', 'mb-avatar' + (S.following === p.id ? ' is-following' : ''), presence);
+      chip.type = 'button';
       chip.textContent = initials(p.name);
-      chip.title = p.name;
+      chip.setAttribute('aria-label', t(S.following === p.id ? 'Js.Board.Unfollow' : 'Js.Board.Follow', p.name));
+      chip.setAttribute('data-tip', t(S.following === p.id ? 'Js.Board.Unfollow' : 'Js.Board.Follow', p.name));
       chip.style.background = p.color;
+      chip.addEventListener('click', function () { MB.emit('follow', S.following === p.id ? null : p.id); });
     });
     if (list.length > 4) {
       var more = MB.html('span', 'mb-avatar mb-avatar--more', presence);
@@ -321,6 +327,17 @@
   };
 
   net.peerCount = function () { return peers.size; };
+
+  /** The people on the board except this person: { id, name, color, role }. */
+  net.peers = function () { return Array.from(peers.values()).filter(function (p) { return p.id !== you; }); };
+  net.renderPresence = renderPresence;
+
+  /** Tells the others what this person sees (a rectangle of the board): for those who follow, or (summon) to bring everybody here. */
+  net.view = function (rect, summon) {
+    if (!opened || peers.size < 1) { return false; }
+    ws.send(JSON.stringify({ t: summon ? 'summon' : 'view', x: rect.x, y: rect.y, w: rect.w, h: rect.h }));
+    return true;
+  };
 
   // ---- the world around ---------------------------------------------------------------------------------------------------------
   window.addEventListener('online', function () { attempt = 0; clearTimeout(retryTimer); if (!opened && S.ready) { reconnect(); } });

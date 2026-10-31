@@ -4,7 +4,7 @@ Guidance for working in this repository. Keep it in sync with the code: update i
 
 ## What MatBoard is
 
-A digital whiteboard in the spirit of Miro. Boards are an endless canvas with sticky notes, text, shapes, connectors, frames, pen strokes and pictures. Several people work on a board at the
+A digital whiteboard in the spirit of Miro. Boards are an endless canvas with sticky notes, text, shapes, connectors, frames, pen strokes, pictures, comments (pins with a thread) and stamps. Several people work on a board at the
 same time (live cursors, changes appear as they are made). Boards are shared with people who have an account (editor / viewer) or through a **link** (view / edit, guests give a name).
 Part of the Mat family: sign-in through **MatIdentity**, mail through **MatSMTP**, the platform contract for **Mattiverse** (all optional, switched on by environment variables).
 
@@ -33,7 +33,7 @@ src/MatBoard
   Services/Boards/           THE business layer, static classes (permission check in every function, in the business layer, not in the pages):
                              BoardAccess (Actor = person and/or link token -> BoardRole; null = "not found" for a board you may not see; an administrator has NO access to the boards of others),
                              BoardService (list/create/update/delete/duplicate, members, link), BoardItems (load, apply a batch of add/upd/del ops with validation: kinds, numbers, colours, no SVG pictures,
-                             size limits, d merged key by key, one lock per board, Revision +1 per batch), BoardRooms (the WebSocket rooms: peers, cursors, broadcast, Revalidate after rights change),
+                             size limits, comment threads, d merged key by key, a locked item (d.lock) only accepts being unlocked, one lock per board, Revision +1 per batch), BoardRooms (the WebSocket rooms: peers, cursors, views for following, summon (editors only), broadcast, Revalidate after rights change),
                              BoardEndpoints (GET /live/boards/{id} snapshot, /live/boards/{id}/ws; Origin check; both AllowAnonymous because links give guests access)
   Services/Accounts/          static too: Profiles (the own account of a person: profile, theme, password), UserAdmin (accounts for administrators; every function checks that the actor is an active administrator; the last administrator stays)
   Services/Mail/MailService  MatSMTP through MailKit, queued in the background; off unless MATSMTP_HOST is set
@@ -46,7 +46,8 @@ src/MatBoard
   Resources/Texts/           the text catalog (en + de); keys of areas Boards, Canvas, Members, Share, About, Mail, Js (for scripts) ...
   wwwroot/js/board-core.js   state, drawing (SVG), geometry, applying changes, history (undo/redo). Item = {id,k,x,y,w,h,r,z,d}; op = add | upd | del; null in d removes a key
   wwwroot/js/board-net.js    snapshot load (+ copy in Cache Storage "mb-boards"), WebSocket, queue of unconfirmed ops (localStorage mb.q.<board>, replayed after reconnect), presence, cursors
-  wwwroot/js/board-ui.js     tools, pointer gestures (mouse/pen/touch, pinch), selection + handles, text editing overlay, bar over the selection, clipboard, images, export, keys
+  wwwroot/js/board-ui.js     tools, pointer gestures (mouse/pen/touch, pinch), selection + handles, alignment guides, quick connect, lock, text editing overlay, bar over the selection, clipboard, images, export, keys; exposes MB.ui
+  wwwroot/js/board-extras.js the side panel (templates, comment threads, frames, search), presenting frames, minimap, following a person, summon
   wwwroot/css/app.css        accent + few app styles (prefix mb-);  board.css = the board page
   wwwroot/sw.js              service worker: static cache, last board pages offline, offline.html; clears on sign-out (pwa.js)
 tests/MatBoard.Tests         unit + database tests

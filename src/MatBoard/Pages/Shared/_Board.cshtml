@@ -42,6 +42,10 @@
         <div class="mb-top__end">
             <div class="mb-presence" id="mb-presence" aria-label="@L["Canvas.People"]"></div>
             <span class="mb-conn" id="mb-conn" hidden role="status"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-cloud-off"></use></svg><span id="mb-conn-text"></span></span>
+            <button type="button" class="mb-top__btn mb-edit-only" id="mb-summon-btn" aria-label="@L["Canvas.Summon"]" data-tip="@L["Canvas.Summon"]" hidden><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-summon"></use></svg></button>
+            <button type="button" class="mb-top__btn" id="mb-search-btn" aria-label="@L["Canvas.Search"]" data-tip="@L["Canvas.Search"] (Ctrl+F)"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-search"></use></svg></button>
+            <button type="button" class="mb-top__btn" id="mb-comments-btn" aria-label="@L["Canvas.Comments"]" data-tip="@L["Canvas.Comments"]"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-message-square"></use></svg></button>
+            <button type="button" class="mb-top__btn" id="mb-frames-btn" aria-label="@L["Canvas.Frames"]" data-tip="@L["Canvas.Frames"]"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-layers"></use></svg></button>
             <button type="button" class="mb-top__btn" id="mb-export-btn" data-menu-toggle="mb-export-menu" aria-haspopup="menu" aria-expanded="false" aria-label="@L["Canvas.Export"]" data-tip="@L["Canvas.Export"]">@Ui.Icon("download")</button>
             @if (Model.Role == BoardRole.Owner)
             {
@@ -69,8 +73,15 @@
             @Html.Raw(Tool("line", "arrow-line", L["Canvas.Tool.Line"].Value, "L"))
             @Html.Raw(Tool("pen", "pen", L["Canvas.Tool.Pen"].Value, "P"))
             @Html.Raw(Tool("frame", "frame", L["Canvas.Tool.Frame"].Value, "F"))
+            @Html.Raw(Tool("comment", "message-square", L["Canvas.Tool.Comment"].Value, "C"))
+            <div class="mb-tools__shapes">
+                <button type="button" class="mb-tool" id="mb-stamp-btn" data-tool="stamp" aria-label="@L["Canvas.Tool.Stamp"]" aria-pressed="false" aria-haspopup="true" aria-expanded="false" data-tip="@L["Canvas.Tool.Stamp"] (S)" data-tip-place="right"><span class="mb-tool__emoji" aria-hidden="true">&#x1F44D;</span></button>
+                <div class="mb-pop mb-pop--side mb-pop--emoji" id="mb-stamp-pop" hidden></div>
+            </div>
             <button type="button" class="mb-tool" id="mb-image-btn" aria-label="@L["Canvas.Tool.Image"]" data-tip="@L["Canvas.Tool.Image"] (I)" data-tip-place="right"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-image"></use></svg></button>
         </div>
+        <span class="mb-tools__sep mb-edit-only" role="separator"></span>
+        <button type="button" class="mb-tool mb-edit-only" id="mb-templates-btn" aria-label="@L["Canvas.Templates"]" data-tip="@L["Canvas.Templates"]" data-tip-place="right"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-template"></use></svg></button>
     </nav>
 
     <div class="mb-history mb-edit-only" id="mb-history">
@@ -82,7 +93,30 @@
         <button type="button" class="mb-top__btn" id="mb-zoom-out" aria-label="@L["Canvas.ZoomOut"]" data-tip="@L["Canvas.ZoomOut"] (-)">@Ui.Icon("zoom-out")</button>
         <button type="button" class="mb-zoom__value" id="mb-zoom-value" aria-label="@L["Canvas.ZoomReset"]" data-tip="@L["Canvas.ZoomReset"] (1)">100%</button>
         <button type="button" class="mb-top__btn" id="mb-zoom-in" aria-label="@L["Canvas.ZoomIn"]" data-tip="@L["Canvas.ZoomIn"] (+)">@Ui.Icon("zoom-in")</button>
+        <button type="button" class="mb-top__btn mb-zoom__map" id="mb-minimap-btn" aria-label="@L["Canvas.Minimap"]" aria-pressed="false" data-tip="@L["Canvas.Minimap"] (M)"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-map"></use></svg></button>
         <button type="button" class="mb-top__btn" id="mb-zoom-fit" aria-label="@L["Canvas.ZoomFit"]" data-tip="@L["Canvas.ZoomFit"] (0)">@Ui.Icon("maximize")</button>
+    </div>
+
+    <canvas class="mb-minimap" id="mb-minimap" width="220" height="150" aria-label="@L["Canvas.Minimap"]" hidden></canvas>
+
+    <aside class="mb-panel" id="mb-panel" aria-labelledby="mb-panel-title" hidden>
+        <header class="mb-panel__head">
+            <h2 class="mb-panel__title" id="mb-panel-title"></h2>
+            <button type="button" class="mb-top__btn" id="mb-panel-close" aria-label="@L["Canvas.Close"]" data-tip="@L["Canvas.Close"]"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-x"></use></svg></button>
+        </header>
+        <div class="mb-panel__body" id="mb-panel-body"></div>
+    </aside>
+
+    <div class="mb-present" id="mb-present" role="toolbar" aria-label="@L["Canvas.Present"]" hidden>
+        <button type="button" class="mb-top__btn" id="mb-present-prev" aria-label="@L["Canvas.Present.Prev"]" data-tip="@L["Canvas.Present.Prev"]"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-chevron-left"></use></svg></button>
+        <span class="mb-present__count" id="mb-present-count"></span>
+        <button type="button" class="mb-top__btn" id="mb-present-next" aria-label="@L["Canvas.Present.Next"]" data-tip="@L["Canvas.Present.Next"]"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-chevron-right"></use></svg></button>
+        <button type="button" class="mb-top__btn" id="mb-present-exit" aria-label="@L["Canvas.Present.Exit"]" data-tip="@L["Canvas.Present.Exit"] (Esc)"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-x"></use></svg></button>
+    </div>
+
+    <div class="mb-followbar" id="mb-followbar" role="status" hidden>
+        <svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-follow"></use></svg><span id="mb-followbar-text"></span>
+        <button type="button" class="mb-followbar__stop" id="mb-followbar-stop">@L["Canvas.Follow.Stop"]</button>
     </div>
 
     <div class="mb-ctx" id="mb-ctx" role="toolbar" aria-label="@L["Canvas.Selection"]" hidden></div>

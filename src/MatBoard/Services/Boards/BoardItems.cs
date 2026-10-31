@@ -31,7 +31,7 @@ public static partial class BoardItems
     public const int MaxDataBytes = 120_000;
     public const int MaxImageBytes = 3_000_000;
 
-    public static readonly IReadOnlySet<string> Kinds = new HashSet<string>(["sticky", "text", "rect", "ellipse", "diamond", "triangle", "line", "pen", "frame", "image"]);
+    public static readonly IReadOnlySet<string> Kinds = new HashSet<string>(["sticky", "text", "rect", "ellipse", "diamond", "triangle", "line", "pen", "frame", "image", "comment", "stamp"]);
 
     private static readonly string[] ColourKeys = ["fill", "stroke", "color", "bg"];
     private static readonly string[] ImagePrefixes = ["data:image/png;base64,", "data:image/jpeg;base64,", "data:image/webp;base64,", "data:image/gif;base64,"];
@@ -149,6 +149,11 @@ public static partial class BoardItems
         }
 
         var existing = items.GetValueOrDefault(uid);
+        if (existing is not null && IsLocked(existing))
+        {
+            return (null, "locked");
+        }
+
         if (existing is null && count >= MaxItemsPerBoard)
         {
             return (null, "the board is full");
@@ -189,6 +194,12 @@ public static partial class BoardItems
         {
             // somebody deleted it meanwhile: nothing to change, not an error
             return (null, null);
+        }
+
+        // a locked item is not changed (moved, resized, edited) by anybody until it is unlocked
+        if (IsLocked(item) && !OnlyUnlocks(op))
+        {
+            return (null, "locked");
         }
 
         var echo = new JsonObject { ["o"] = "upd", ["id"] = uid.ToString() };
@@ -261,6 +272,11 @@ public static partial class BoardItems
             return (null, "del without an id");
         }
 
+        if (items.TryGetValue(uid, out var locked) && IsLocked(locked))
+        {
+            return (null, "locked");
+        }
+
         if (items.Remove(uid, out var item))
         {
             if (db.Entry(item).State == EntityState.Added)
@@ -297,6 +313,16 @@ public static partial class BoardItems
             }
         }
 
+        if (kind == "comment" && CommentProblem(data) is { } comment)
+        {
+            return comment;
+        }
+
+        if (kind == "stamp" && (data["e"] is not JsonValue e || !e.TryGetValue<string>(out var emoji) || emoji.Length is 0 or > 16))
+        {
+            return "not a stamp";
+        }
+
         if (kind == "image")
         {
             if (data["src"] is not JsonValue src || !src.TryGetValue<string>(out var address) || !ImagePrefixes.Any(p => address.StartsWith(p, StringComparison.Ordinal)))
@@ -309,6 +335,35 @@ public static partial class BoardItems
 
         return data.ToJsonString().Length > MaxDataBytes ? "item too big" : null;
     }
+
+    /// <summary>A comment is a thread: up to 200 messages, each with an author (a name) and a text.</summary>
+    private static string? CommentProblem(JsonObject data)
+    {
+        if (data["msgs"] is not JsonArray messages || messages.Count is 0 or > 200)
+        {
+            return "a comment needs messages";
+        }
+
+        foreach (var message in messages)
+        {
+            if (message is not JsonObject m
+                || m["a"] is not JsonValue a || !a.TryGetValue<string>(out var author) || author.Length > 60
+                || m["t"] is not JsonValue t || !t.TryGetValue<string>(out var text) || text.Length is 0 or > 2000)
+            {
+                return "invalid message";
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsLocked(BoardItem item)
+        => ParseObject(item.Data)["lock"] is JsonValue value && value.TryGetValue<bool>(out var locked) && locked;
+
+    /// <summary>A change that only takes the lock away (and touches nothing else).</summary>
+    private static bool OnlyUnlocks(JsonObject op)
+        => op["d"] is JsonObject d && d.Count == 1 && d.ContainsKey("lock")
+           && !new[] { "x", "y", "w", "h", "r", "z" }.Any(op.ContainsKey);
 
     /// <summary>The data of a copied item with its references (the ends of a connector) pointing at the copies; an end whose item was not copied becomes a loose end.</summary>
     public static string RemapReferences(string dataJson, IReadOnlyDictionary<Guid, Guid> map)
