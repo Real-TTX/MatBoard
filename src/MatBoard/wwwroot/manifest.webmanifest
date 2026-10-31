@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "MatBoard",
+  "short_name": "MatBoard",
+  "description": "A digital whiteboard for working together – sticky notes, shapes and drawings on an endless canvas, live with your team. Digitales Whiteboard für die Zusammenarbeit.",
+  "start_url": "/Boards",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f5f4f1",
+  "theme_color": "#ffc21f",
+  "categories": ["productivity", "business"],
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "New board / Neues Board", "short_name": "New", "url": "/Boards/Edit", "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "My boards / Meine Boards", "short_name": "Mine", "url": "/Boards?scope=mine", "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Shared with me / Mit mir geteilt", "short_name": "Shared", "url": "/Boards?scope=shared", "icons": [{ "src": "/img/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

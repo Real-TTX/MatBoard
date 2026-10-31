@@ -1,0 +1,66 @@
+@page "/Boards/Members"
+@model MatBoard.Pages.Boards.MembersModel
+@{
+    ViewData["Title"] = Model.BoardName;
+    ViewData["PageSub"] = L["Members.Sub"].Value;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Boards.Title"].Value, "/Boards"), (Model.BoardName, null) };
+}
+
+@section TopActions {
+    <a class="mat-btn mat-btn--secondary mat-btn--icon" href="/Boards/Canvas/@Model.Id" aria-label="@L["Boards.Open"]" data-tip="@L["Boards.Open"]">@Ui.Icon("external")</a>
+}
+
+<mb-tabs label="@L["Boards.One"]">
+    <mb-tab href="/Boards/Edit?id=@Model.Id">@L["Boards.Tab.General"]</mb-tab>
+    <mb-tab href="/Boards/Members?id=@Model.Id" active>@L["Boards.Tab.Members"]</mb-tab>
+    <mb-tab href="/Boards/Share?id=@Model.Id">@L["Boards.Tab.Sharing"]</mb-tab>
+</mb-tabs>
+
+<div class="mat-cols">
+    <div class="mat-col-12 mat-col-lg-8">
+        <div class="mat-list">
+            <mb-table caption="@L["Boards.Tab.Members"]">
+                <thead>
+                    <tr><th scope="col">@L["Members.Col.Person"]</th><th scope="col">@L["Boards.Col.Access"]</th><th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td data-label="@L["Members.Col.Person"]"><div class="mat-table__name"><span class="mat-avatar mat-avatar--sm" aria-hidden="true">@Ui.Initials(Model.OwnerName)</span><span>@Model.OwnerName @L["Boards.YouInBrackets"]<small class="mat-mono">@Model.OwnerEmail</small></span></div></td>
+                        <td data-label="@L["Boards.Col.Access"]"><span class="mat-pill mat-pill--accent">@L["Boards.Role.Owner"]</span></td>
+                        <td class="mat-table__cell-actions"></td>
+                    </tr>
+                    @foreach (var m in Model.Members)
+                    {
+                        var next = m.Role == BoardRole.Editor ? BoardRole.Viewer : BoardRole.Editor;
+                        var label = L[next == BoardRole.Editor ? "Members.MakeEditor" : "Members.MakeViewer"].Value;
+                        <tr>
+                            <td data-label="@L["Members.Col.Person"]"><div class="mat-table__name"><span class="mat-avatar mat-avatar--sm" aria-hidden="true">@Ui.Initials(m.Name)</span><span>@m.Name<small class="mat-mono">@m.Email</small></span></div></td>
+                            <td data-label="@L["Boards.Col.Access"]"><span class="mat-pill mat-pill--plain">@L["Boards.Role." + m.Role]</span></td>
+                            <td class="mat-table__cell-actions">
+                                <div class="mat-table__actions">
+                                    <form method="post" asp-page-handler="Role" asp-route-id="@Model.Id" asp-route-memberId="@m.UserId" asp-route-role="@next">
+                                        <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" aria-label="@label: @m.Name" data-tip="@label">@Ui.Icon(next == BoardRole.Editor ? "edit" : "eye")</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Remove" asp-route-id="@Model.Id" asp-route-memberId="@m.UserId" class="mb-sep">
+                                        <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm mb-danger" aria-label="@L["Members.RemoveNamed", m.Name]" data-tip="@L["Members.Remove"]"
+                                                data-confirm="@L["Members.RemoveConfirm", m.Name]" data-confirm-ok="@L["Members.Remove"]">@Ui.Icon("x")</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </mb-table>
+
+            <form class="mat-form mb-inline-form" method="post" asp-page-handler="Add" asp-route-id="@Model.Id" novalidate>
+                <partial name="_FormSummary" model="ViewData.ModelState" />
+                <mb-field name="Email" kind="email" label="@L["Members.Add"]" value="@Model.Email" placeholder="@L["Members.Add.Placeholder"]" autocomplete="off" required
+                          hint="@L["Members.Add.Hint"]" msg-required="@L["Account.Login.Email.Required"]" />
+                <mb-field name="NewRole" kind="radios" label="@L["Boards.Col.Access"]" value="@Model.NewRole" options="Model.Roles" />
+                <div class="mat-btn-row mat-btn-row--plain">
+                    <button type="submit" class="mat-btn mat-btn--primary">@Ui.Icon("plus")<span>@L["Members.Add.Button"]</span></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,49 @@
+@page "/Boards/Share"
+@model MatBoard.Pages.Boards.ShareModel
+@{
+    ViewData["Title"] = Model.BoardName;
+    ViewData["PageSub"] = L["Share.Sub"].Value;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Boards.Title"].Value, "/Boards"), (Model.BoardName, null) };
+    ViewData["Width"] = "narrow";
+}
+
+@section TopActions {
+    <a class="mat-btn mat-btn--secondary mat-btn--icon" href="/Boards/Canvas/@Model.Id" aria-label="@L["Boards.Open"]" data-tip="@L["Boards.Open"]">@Ui.Icon("external")</a>
+}
+
+<mb-tabs label="@L["Boards.One"]">
+    <mb-tab href="/Boards/Edit?id=@Model.Id">@L["Boards.Tab.General"]</mb-tab>
+    <mb-tab href="/Boards/Members?id=@Model.Id">@L["Boards.Tab.Members"]</mb-tab>
+    <mb-tab href="/Boards/Share?id=@Model.Id" active>@L["Boards.Tab.Sharing"]</mb-tab>
+</mb-tabs>
+
+<form class="mat-form" method="post" novalidate>
+    <partial name="_FormSummary" model="ViewData.ModelState" />
+    <div class="mat-card">
+        <div class="mat-card__head"><h2 class="mat-card__title">@Ui.Icon("link")@L["Share.Link"]</h2></div>
+        <div class="mat-card__body mat-form">
+            <mb-field name="Mode" kind="radios" label="@L["Share.Who"]" value="@Model.Mode" options="Model.Modes" hint="@L["Share.Who.Hint"]" />
+            @if (Model.Mode != nameof(LinkMode.Off))
+            {
+                <div class="mat-field">
+                    <label class="mat-label" for="share-url">@L["Share.Address"]</label>
+                    <div class="mb-copyrow">
+                        <input class="mat-input mat-mono" id="share-url" type="text" readonly value="@Model.LinkUrl" />
+                        <button type="button" class="mat-btn mat-btn--secondary" data-copy="#share-url">@Ui.Icon("copy")<span>@L["Common.Copy"]</span></button>
+                    </div>
+                    <p class="mat-hint">@L["Share.Address.Hint"]</p>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="mat-btn-row">
+        <button type="submit" class="mat-btn mat-btn--primary">@Ui.Icon("save")<span>@L["Common.Save"]</span></button>
+        <a class="mat-btn mat-btn--secondary" href="/Boards">@Ui.Icon("back")<span>@L["Common.Back"]</span></a>
+        @if (Model.Mode != nameof(LinkMode.Off))
+        {
+            <span class="mat-btn-row__spacer"></span>
+            <button type="submit" class="mat-btn mat-btn--danger" formaction="@Url.Page("Share", "Renew", new { id = Model.Id })" formnovalidate
+                    data-confirm="@L["Share.Renew.Confirm"]" data-confirm-ok="@L["Share.Renew"]">@Ui.Icon("refresh")<span>@L["Share.Renew"]</span></button>
+        }
+    </div>
+</form>

@@ -1,0 +1,8 @@
+@page "/b/{token:guid}"
+@model MatBoard.Pages.Public.BoardModel
+@{
+    Layout = "_LayoutBoard";
+    ViewData["Title"] = Model.Board.Name;
+}
+
+<partial name="_Board" model="Model.Board" />

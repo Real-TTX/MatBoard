@@ -1,0 +1,26 @@
+{
+  "Landing.Description": { "en": "MatBoard – a digital whiteboard for your team: sticky notes, shapes, connectors and drawings on an endless canvas, edited together in real time.", "de": "MatBoard – das digitale Whiteboard für dein Team: Haftnotizen, Formen, Verbindungen und Zeichnungen auf einer endlosen Fläche, gemeinsam in Echtzeit bearbeitet." },
+  "Landing.Lead": { "en": "Collect ideas, plan projects and sketch concepts on an endless canvas – together, <em>live</em>, from any device.", "de": "Ideen sammeln, Projekte planen und Konzepte skizzieren auf einer endlosen Fläche – gemeinsam, <em>live</em>, auf jedem Gerät." },
+  "Landing.Register": { "en": "Register for free", "de": "Kostenlos registrieren" },
+  "Landing.Features": { "en": "Features", "de": "Funktionen" },
+  "Landing.Canvas.Title": { "en": "An endless canvas", "de": "Eine endlose Fläche" },
+  "Landing.Canvas.Text": { "en": "Sticky notes, text, shapes, connectors, frames, pen and pictures. Zoom, pan, undo and redo.", "de": "Haftnotizen, Text, Formen, Verbindungen, Rahmen, Stift und Bilder. Zoomen, Verschieben, Rückgängig und Wiederholen." },
+  "Landing.Live.Title": { "en": "Together in real time", "de": "Gemeinsam in Echtzeit" },
+  "Landing.Live.Text": { "en": "See who is on the board, follow their cursors and watch changes appear as they are made.", "de": "Sieh, wer auf dem Board ist, folge den Cursors und beobachte Änderungen, während sie entstehen." },
+  "Landing.Share.Title": { "en": "Share as you like", "de": "Teilen, wie du willst" },
+  "Landing.Share.Text": { "en": "Invite people as viewers or editors, or give out a link to look at the board – or to work on it.", "de": "Lade Leute als Betrachter oder Bearbeiter ein, oder gib einen Link heraus, um das Board anzusehen – oder daran zu arbeiten." },
+  "Landing.App.Title": { "en": "An app on every device", "de": "Eine App auf jedem Gerät" },
+  "Landing.App.Text": { "en": "Install MatBoard like an app on your phone or computer. Without a network the last copy of a board stays available.", "de": "Installiere MatBoard wie eine App auf Handy oder Computer. Ohne Netz bleibt die letzte Kopie eines Boards verfügbar." },
+
+  "Errors.Home": { "en": "To the start page", "de": "Zur Startseite" },
+  "Errors.General.Title": { "en": "Something went wrong", "de": "Etwas ist schiefgegangen" },
+  "Errors.General.Text": { "en": "Please try again in a moment.", "de": "Bitte versuche es gleich noch einmal." },
+  "Errors.NotFound.Title": { "en": "Not found", "de": "Nicht gefunden" },
+  "Errors.NotFound.Text": { "en": "This page does not exist, or it belongs to somebody else.", "de": "Diese Seite gibt es nicht, oder sie gehört jemand anderem." },
+  "Errors.Forbidden.Title": { "en": "No access", "de": "Kein Zugriff" },
+  "Errors.Forbidden.Text": { "en": "You lack the permission for this.", "de": "Dafür fehlt die Berechtigung." },
+  "Errors.BadRequest.Title": { "en": "Invalid request", "de": "Ungültige Anfrage" },
+  "Errors.BadRequest.Text": { "en": "Please reload the page and try again.", "de": "Bitte lade die Seite neu und versuche es noch einmal." },
+  "Errors.TooMany.Title": { "en": "Too many requests", "de": "Zu viele Anfragen" },
+  "Errors.TooMany.Text": { "en": "Please wait a moment.", "de": "Bitte einen Moment warten." }
+}

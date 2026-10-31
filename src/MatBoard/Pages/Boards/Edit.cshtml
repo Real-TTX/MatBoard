@@ -1,0 +1,38 @@
+@page "/Boards/Edit"
+@model MatBoard.Pages.Boards.EditModel
+@{
+    ViewData["Title"] = L[Model.IsNew ? "Boards.New" : "Boards.Edit"].Value;
+    ViewData["Crumbs"] = new List<(string, string?)> { (L["Boards.Title"].Value, "/Boards"), (Model.IsNew ? L["Common.New"].Value : Model.Name, null) };
+    ViewData["Width"] = "narrow";
+    var swatches = string.Join(",", BoardService.Colors.Select(c => $"{c.Value}:{c.Name}"));
+}
+
+@section TopActions {
+    @if (!Model.IsNew)
+    {
+        <a class="mat-btn mat-btn--secondary mat-btn--icon" href="/Boards/Canvas/@Model.Id" aria-label="@L["Boards.Open"]" data-tip="@L["Boards.Open"]">@Ui.Icon("external")</a>
+    }
+}
+
+@if (!Model.IsNew)
+{
+    <mb-tabs label="@L["Boards.One"]">
+        <mb-tab href="/Boards/Edit?id=@Model.Id" active>@L["Boards.Tab.General"]</mb-tab>
+        <mb-tab href="/Boards/Members?id=@Model.Id">@L["Boards.Tab.Members"]</mb-tab>
+        <mb-tab href="/Boards/Share?id=@Model.Id">@L["Boards.Tab.Sharing"]</mb-tab>
+    </mb-tabs>
+}
+
+<form class="mat-form" method="post" novalidate>
+    <partial name="_FormSummary" model="ViewData.ModelState" />
+    <div class="mat-card">
+        <div class="mat-card__body mat-form">
+            <mb-field name="Name" label="@L["Common.Name"]" required value="@Model.Name" maxlength="120" autofocus msg-required="@L["Common.NameRequired"]" />
+            <mb-field name="Description" kind="textarea" label="@L["Boards.Description"]" value="@Model.Description" maxlength="1000" rows="3" optional />
+            <mb-field name="Color" kind="colour" label="@L["Common.Color"]" value="@Model.Color" picker="swatches=@swatches" hint="@L["Boards.Color.Hint"]" />
+            <mb-field name="Background" kind="radios" label="@L["Boards.Paper"]" value="@Model.Background" options="Model.Papers" />
+        </div>
+    </div>
+    <mb-buttons save="@L[Model.IsNew ? "Boards.Create" : "Common.Save"]" back="/Boards" delete-handler="@(Model.IsNew ? null : "Delete")" delete-label="@L["Boards.Delete"]"
+                delete-confirm="@L["Boards.DeleteConfirm", Model.Name]" />
+</form>

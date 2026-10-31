@@ -1,0 +1,18 @@
+# MatBoard
+
+> MatBoard is a self-hosted digital whiteboard in the spirit of Miro. Teams collect ideas, plan projects and sketch concepts on an endless canvas with sticky notes, text, shapes, connectors, frames, pen strokes and pictures, and edit a board together in real time (live cursors, changes appear as they are made). It is a Progressive Web App (installable, a copy of the last loaded board stays available offline).
+
+Everything except the start page needs an account or the secret link of a board. There is no public API for third parties; the pages and the live connection of the web app are its only interface. The interface is available in English and German.
+
+## What a person can do
+
+- Create boards (name, description, colour, paper: dots, grid, lines or plain), duplicate them, delete them.
+- Work on a board: sticky notes, text, rectangles, ellipses, diamonds, triangles, connectors (straight, curved, elbow, with arrow heads, attached to shapes), frames, pen, pictures; move, resize, rotate, colour, copy and paste, undo and redo, zoom and pan, export as PNG, SVG or JSON.
+- Share a board with people who have an account (editor or viewer) or give out a link that lets anybody look at the board or work on it (guests choose a name).
+- Sign in locally or through MatIdentity; mails about shared boards go through MatSMTP (both optional, set up by Mattiverse).
+
+## Links
+
+- [Start page](/)
+- [Sign in](/Account/Login)
+- [Register](/Account/Register)

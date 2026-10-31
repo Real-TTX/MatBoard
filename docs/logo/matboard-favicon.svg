@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="MatBoard">
+  <rect width="64" height="64" rx="14" fill="#FFC21F"/>
+  <g transform="rotate(-8 26 28)"><rect x="9" y="11" width="28" height="28" rx="4" fill="#FFFFFF"/></g>
+  <g transform="rotate(7 42 42)"><rect x="28" y="27" width="28" height="28" rx="4" fill="#1D1600"/></g>
+</svg>

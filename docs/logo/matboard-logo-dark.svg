@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 40" width="152" height="40" role="img" aria-label="MatBoard">
+  <rect x="2" y="2" width="36" height="36" rx="8" fill="#FFC21F"/>
+  <g transform="rotate(-8 15 16)"><rect x="7" y="8" width="15" height="15" rx="2.2" fill="#FFFFFF"/></g>
+  <g transform="rotate(7 27 27)"><rect x="18" y="17" width="15" height="15" rx="2.2" fill="#1D1600"/></g>
+  <text x="46" y="28.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="-0.4" fill="#F5F4F1">Mat<tspan fill="#E5A200">Board</tspan></text>
+</svg>

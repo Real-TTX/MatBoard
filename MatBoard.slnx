@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MatBoard/MatBoard.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MatBoard.Tests/MatBoard.Tests.csproj" />
+  </Folder>
+</Solution>

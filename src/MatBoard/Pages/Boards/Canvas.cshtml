@@ -1,0 +1,8 @@
+@page "/Boards/Canvas/{id:long}"
+@model MatBoard.Pages.Boards.CanvasModel
+@{
+    Layout = "_LayoutBoard";
+    ViewData["Title"] = Model.Board.Name;
+}
+
+<partial name="_Board" model="Model.Board" />

@@ -1,0 +1,125 @@
+@model BoardViewModel
+@*
+    The board: an SVG canvas that fills the window and the controls around it (top bar, tools, zoom, the bar over the selection). The scripts (board-core, board-net,
+    board-ui) fill the canvas; what they need to know is in the data-* attributes of #mb-board. Nothing here is inline style or script (CSP).
+*@
+@{
+    var guest = Model.Guest;
+    string Tool(string tool, string icon, string label, string key)
+    {
+        return $"<button type=\"button\" class=\"mb-tool\" data-tool=\"{tool}\" aria-label=\"{System.Net.WebUtility.HtmlEncode(label)}\" aria-pressed=\"false\" data-tip=\"{System.Net.WebUtility.HtmlEncode(label)} ({key})\" data-tip-place=\"right\"><svg class=\"mat-icon\" aria-hidden=\"true\" focusable=\"false\"><use href=\"#mat-i-{icon}\"></use></svg></button>";
+    }
+}
+<div class="mb-board" id="mb-board" data-board="@Model.Id" data-role="@Model.Role.ToString().ToLowerInvariant()" data-background="@Model.Background"
+     data-name="@Model.Name" data-link="@Model.LinkToken" data-guest="@(guest ? "1" : "0")" data-person="@Model.Person" data-zone="@Model.Zone">
+
+    <svg class="mb-canvas" id="mb-canvas" role="application" aria-label="@L["Canvas.Label"]" tabindex="0">
+        <defs id="mb-defs">
+            <pattern id="mb-pat-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1.4" class="mb-pat-ink" /></pattern>
+            <pattern id="mb-pat-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" class="mb-pat-line" /></pattern>
+            <pattern id="mb-pat-lines" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M0 23.5H24" fill="none" class="mb-pat-line" /></pattern>
+        </defs>
+        <rect id="mb-paper" class="mb-paper" width="100%" height="100%"></rect>
+        <g id="mb-world"></g>
+        <g id="mb-overlay"></g>
+    </svg>
+    <div class="mb-cursors" id="mb-cursors" aria-hidden="true"></div>
+    <div class="mb-hint" id="mb-hint" hidden></div>
+
+    <header class="mb-top">
+        <div class="mb-top__start">
+            @if (!guest)
+            {
+                <a class="mb-top__btn" href="/Boards" aria-label="@L["Canvas.Back"]" data-tip="@L["Canvas.Back"]">@Ui.Icon("back")</a>
+            }
+            else
+            {
+                <a class="mb-top__brand" href="/" aria-label="@Ui.AppName">@Ui.Logo("sm")</a>
+            }
+            <h1 class="mb-top__title" id="mb-title">@Model.Name</h1>
+            <span class="mb-pill mb-pill--role" id="mb-role"@(Model.Role == BoardRole.Owner ? " hidden" : "")>@L["Boards.Role." + Model.Role]</span>
+        </div>
+        <div class="mb-top__end">
+            <div class="mb-presence" id="mb-presence" aria-label="@L["Canvas.People"]"></div>
+            <span class="mb-conn" id="mb-conn" hidden role="status"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-cloud-off"></use></svg><span id="mb-conn-text"></span></span>
+            <button type="button" class="mb-top__btn" id="mb-export-btn" data-menu-toggle="mb-export-menu" aria-haspopup="menu" aria-expanded="false" aria-label="@L["Canvas.Export"]" data-tip="@L["Canvas.Export"]">@Ui.Icon("download")</button>
+            @if (Model.Role == BoardRole.Owner)
+            {
+                <a class="mb-top__btn mb-top__btn--primary" href="/Boards/Share?id=@Model.Id"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-share"></use></svg><span>@L["Canvas.Share"]</span></a>
+            }
+        </div>
+    </header>
+
+    <nav class="mb-tools" id="mb-tools" aria-label="@L["Canvas.Tools"]">
+        @Html.Raw(Tool("select", "cursor", L["Canvas.Tool.Select"].Value, "V"))
+        @Html.Raw(Tool("hand", "hand", L["Canvas.Tool.Hand"].Value, "H"))
+        <span class="mb-tools__sep" role="separator"></span>
+        <div class="mb-edit-only mb-tools__group">
+            @Html.Raw(Tool("sticky", "sticky", L["Canvas.Tool.Sticky"].Value, "N"))
+            @Html.Raw(Tool("text", "type", L["Canvas.Tool.Text"].Value, "T"))
+            <div class="mb-tools__shapes">
+                <button type="button" class="mb-tool" id="mb-shapes-btn" data-tool="shape" aria-label="@L["Canvas.Tool.Shapes"]" aria-pressed="false" aria-haspopup="true" aria-expanded="false" data-tip="@L["Canvas.Tool.Shapes"] (R)" data-tip-place="right"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-square"></use></svg></button>
+                <div class="mb-pop mb-pop--side" id="mb-shapes-pop" hidden>
+                    @Html.Raw(Tool("rect", "square", L["Canvas.Shape.rect"].Value, "R"))
+                    @Html.Raw(Tool("ellipse", "ellipse", L["Canvas.Shape.ellipse"].Value, "O"))
+                    @Html.Raw(Tool("diamond", "diamond", L["Canvas.Shape.diamond"].Value, "D"))
+                    @Html.Raw(Tool("triangle", "triangle", L["Canvas.Shape.triangle"].Value, "G"))
+                </div>
+            </div>
+            @Html.Raw(Tool("line", "arrow-line", L["Canvas.Tool.Line"].Value, "L"))
+            @Html.Raw(Tool("pen", "pen", L["Canvas.Tool.Pen"].Value, "P"))
+            @Html.Raw(Tool("frame", "frame", L["Canvas.Tool.Frame"].Value, "F"))
+            <button type="button" class="mb-tool" id="mb-image-btn" aria-label="@L["Canvas.Tool.Image"]" data-tip="@L["Canvas.Tool.Image"] (I)" data-tip-place="right"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-image"></use></svg></button>
+        </div>
+    </nav>
+
+    <div class="mb-history mb-edit-only" id="mb-history">
+        <button type="button" class="mb-top__btn" id="mb-undo" aria-label="@L["Canvas.Undo"]" data-tip="@L["Canvas.Undo"] (Ctrl+Z)" disabled>@Ui.Icon("undo")</button>
+        <button type="button" class="mb-top__btn" id="mb-redo" aria-label="@L["Canvas.Redo"]" data-tip="@L["Canvas.Redo"] (Ctrl+Y)" disabled>@Ui.Icon("redo")</button>
+    </div>
+
+    <div class="mb-zoom" id="mb-zoom">
+        <button type="button" class="mb-top__btn" id="mb-zoom-out" aria-label="@L["Canvas.ZoomOut"]" data-tip="@L["Canvas.ZoomOut"] (-)">@Ui.Icon("zoom-out")</button>
+        <button type="button" class="mb-zoom__value" id="mb-zoom-value" aria-label="@L["Canvas.ZoomReset"]" data-tip="@L["Canvas.ZoomReset"] (1)">100%</button>
+        <button type="button" class="mb-top__btn" id="mb-zoom-in" aria-label="@L["Canvas.ZoomIn"]" data-tip="@L["Canvas.ZoomIn"] (+)">@Ui.Icon("zoom-in")</button>
+        <button type="button" class="mb-top__btn" id="mb-zoom-fit" aria-label="@L["Canvas.ZoomFit"]" data-tip="@L["Canvas.ZoomFit"] (0)">@Ui.Icon("maximize")</button>
+    </div>
+
+    <div class="mb-ctx" id="mb-ctx" role="toolbar" aria-label="@L["Canvas.Selection"]" hidden></div>
+    <textarea class="mb-editor" id="mb-editor" aria-label="@L["Canvas.EditText"]" hidden></textarea>
+    <input type="file" id="mb-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+
+    <div class="mb-loading" id="mb-loading" role="status"><span class="mb-spinner" aria-hidden="true"></span><span>@L["Canvas.Loading"]</span></div>
+    <div class="mb-fail" id="mb-fail" role="alert" hidden>
+        <svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-cloud-off"></use></svg>
+        <h2 id="mb-fail-title">@L["Canvas.Fail.Title"]</h2>
+        <p id="mb-fail-text">@L["Canvas.Fail.Text"]</p>
+        <button type="button" class="mat-btn mat-btn--primary" id="mb-fail-retry">@Ui.Icon("refresh")<span>@L["Canvas.Retry"]</span></button>
+    </div>
+
+    <div class="mat-menu" id="mb-export-menu" role="menu" aria-label="@L["Canvas.Export"]" hidden>
+        <button type="button" class="mat-menu__item" role="menuitem" data-export="png">@Ui.Icon("image")<span>@L["Canvas.Export.Png"]</span></button>
+        <button type="button" class="mat-menu__item" role="menuitem" data-export="svg">@Ui.Icon("file")<span>@L["Canvas.Export.Svg"]</span></button>
+        <button type="button" class="mat-menu__item" role="menuitem" data-export="json">@Ui.Icon("code")<span>@L["Canvas.Export.Json"]</span></button>
+    </div>
+
+    @if (guest)
+    {
+        <dialog class="mat-dialog" id="mb-guest" aria-labelledby="mb-guest-title">
+            <form class="mat-dialog__form" method="dialog">
+                <div class="mat-dialog__head">
+                    @Ui.Icon("user")
+                    <h2 class="mat-dialog__title" id="mb-guest-title">@L["Canvas.Guest.Title"]</h2>
+                </div>
+                <div class="mat-dialog__body">
+                    <p>@L["Canvas.Guest.Text"]</p>
+                    <label class="mat-label" for="mb-guest-name">@L["Canvas.Guest.Name"]</label>
+                    <input class="mat-input" id="mb-guest-name" maxlength="30" autocomplete="nickname" />
+                </div>
+                <div class="mat-dialog__foot">
+                    <button type="submit" class="mat-btn mat-btn--primary" value="ok">@L["Canvas.Guest.Join"]</button>
+                </div>
+            </form>
+        </dialog>
+    }
+</div>

@@ -1,0 +1,70 @@
+@page "/Boards"
+@model MatBoard.Pages.Boards.IndexModel
+@{
+    ViewData["Title"] = L["Boards.Title"].Value;
+    ViewData["PageSub"] = L["Boards.Sub"].Value;
+}
+
+<div class="mat-list">
+    <partial name="_Toolbar" model="Model.Toolbar" />
+
+    @if (Model.Listing.Rows.Count == 0)
+    {
+        <partial name="_Empty" model="@(new EmptyStateModel("layout", L[Model.Toolbar.Total == 0 ? "Boards.Empty.Title" : "Boards.NoMatch"].Value, L[Model.Toolbar.Total == 0 ? "Boards.Empty.Text" : "Lists.ChangeTools"].Value, Model.Toolbar.Total == 0, "/Boards/Edit", L["Boards.New"].Value, Model.Toolbar.UrlReset()))" />
+    }
+    else
+    {
+        <mb-table caption="@L["Boards.Title"]">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Boards.Col.Board"]</th>
+                    <th scope="col" class="mat-hide-sm">@L["Boards.Col.Owner"]</th>
+                    <th scope="col">@L["Boards.Col.Access"]</th>
+                    <th scope="col" class="mat-num mat-hide-sm">@L["Boards.Col.People"]</th>
+                    <th scope="col" class="mat-hide-md">@L["Boards.Col.Changed"]</th>
+                    <th scope="col"><span class="mat-sr-only">@L["Common.Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model.Listing.Rows)
+                {
+                    <tr>
+                        <td data-label="@L["Boards.Col.Board"]">
+                            <a class="mb-name" href="/Boards/Canvas/@b.Id">@Ui.Icon("square", "mb-swatch", b.Color)<span>@b.Name</span></a>
+                            @if (!string.IsNullOrEmpty(b.Description)) { <small class="mb-muted mb-block-line">@b.Description</small> }
+                        </td>
+                        <td data-label="@L["Boards.Col.Owner"]" class="mat-hide-sm">@(b.Mine ? L["Boards.You"].Value : b.OwnerName)</td>
+                        <td data-label="@L["Boards.Col.Access"]"><span class="mat-pill @(b.Role == BoardRole.Owner ? "mat-pill--accent" : "mat-pill--plain")">@L["Boards.Role." + b.Role]</span></td>
+                        <td data-label="@L["Boards.Col.People"]" class="mat-num mat-mono mat-hide-sm">@(b.Members + 1)</td>
+                        <td data-label="@L["Boards.Col.Changed"]" class="mat-mono mat-hide-md">@Dates.Stamp(b.UpdateDate, Model.Zone)</td>
+                        <td class="mat-table__cell-actions">
+                            <div class="mat-table__actions">
+                                <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Boards/Canvas/@b.Id" aria-label="@L["Boards.OpenNamed", b.Name]" data-tip="@L["Boards.Open"]">@Ui.Icon("external")</a>
+                                <form method="post" asp-page-handler="Duplicate" asp-route-id="@b.Id">
+                                    <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" aria-label="@L["Boards.DuplicateNamed", b.Name]" data-tip="@L["Boards.Duplicate"]">@Ui.Icon("copy")</button>
+                                </form>
+                                @if (b.Mine)
+                                {
+                                    <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Boards/Edit?id=@b.Id" aria-label="@L["Common.EditNamed", b.Name]" data-tip="@L["Common.Edit"]">@Ui.Icon("edit")</a>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="Leave" asp-route-id="@b.Id" class="mb-sep">
+                                        <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm mb-danger" aria-label="@L["Boards.LeaveNamed", b.Name]" data-tip="@L["Boards.Leave"]"
+                                                data-confirm="@L["Boards.LeaveConfirm", b.Name]" data-confirm-ok="@L["Boards.Leave"]">@Ui.Icon("logout")</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </mb-table>
+    }
+
+    <partial name="_Pager" model="Model.Pager" />
+
+    <div class="mat-actions">
+        <a class="mat-btn mat-btn--primary" href="/Boards/Edit">@Ui.Icon("plus")<span>@L["Boards.New"]</span></a>
+    </div>
+</div>
