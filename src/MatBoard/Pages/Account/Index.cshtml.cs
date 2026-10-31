@@ -5,7 +5,7 @@ using MatBoard.Services;
 using MatBoard.Services.Boards;
 using MatBoard.Services.Mail;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using MatBoard.Services.Accounts;
 
 namespace MatBoard.Pages.Account;
 
@@ -38,9 +38,13 @@ public sealed class IndexModel(AppDbContext db, MailService mail) : AppPageModel
         new("contrast", Text.T("Settings.Scheme.Contrast")), new("oled", Text.T("Settings.Scheme.Oled")),
     ];
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
-        var user = await db.Users.AsNoTracking().FirstAsync(u => u.Id == UserId);
+        if (await Profiles.GetAsync(db, UserId, HttpContext.RequestAborted) is not { } user)
+        {
+            return NotFound();
+        }
+
         DisplayName = user.DisplayName;
         Language = user.Language;
         TimeZone = user.TimeZone;
@@ -48,38 +52,20 @@ public sealed class IndexModel(AppDbContext db, MailService mail) : AppPageModel
         MailOnShare = user.MailOnShare;
         Scheme = user.Scheme;
         Email = user.Email;
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var user = await db.Users.FirstAsync(u => u.Id == UserId);
-        Email = user.Email;
-        if (string.IsNullOrWhiteSpace(DisplayName))
+        var input = new ProfileInput(DisplayName, Language, TimeZone, CursorColor, MailOnShare, Scheme);
+        var (user, errors) = await Profiles.UpdateAsync(db, UserId, input, mail.IsConfigured, HttpContext.RequestAborted);
+        if (user is null)
         {
-            ModelState.AddModelError(nameof(DisplayName), Text.T("Account.Name.Required"));
-        }
-
-        if (!Dates.IsZone(TimeZone))
-        {
-            ModelState.AddModelError(nameof(TimeZone), Text.T("Settings.TimeZone.Invalid"));
-        }
-
-        if (!ModelState.IsValid)
-        {
+            Email = (await Profiles.GetAsync(db, UserId))?.Email ?? string.Empty;
+            errors.ForEach(e => ModelState.AddModelError(e.Field, e.Message));
             return Page();
         }
 
-        user.DisplayName = DisplayName.Trim().Length > 120 ? DisplayName.Trim()[..120] : DisplayName.Trim();
-        user.Language = Languages.IsSupported(Language) ? Languages.Normalize(Language) : string.Empty;
-        user.TimeZone = TimeZone;
-        user.CursorColor = Ui.IsColour(CursorColor) ? CursorColor.ToLowerInvariant() : null;
-        if (mail.IsConfigured)
-        {
-            user.MailOnShare = MailOnShare;
-        }
-
-        user.Scheme = Scheme is "paper" or "contrast" or "oled" ? Scheme : "standard";
-        await db.SaveChangesAsync();
         if (user.Language.Length > 0)
         {
             Languages.SetCookie(Response, user.Language, Request.IsHttps);
@@ -99,9 +85,8 @@ public sealed class IndexModel(AppDbContext db, MailService mail) : AppPageModel
     /// <summary>The theme button of the menu (system, light, dark), saved per person.</summary>
     public async Task<IActionResult> OnPostThemeAsync(string theme)
     {
-        if (theme is "system" or "light" or "dark")
+        if (await Profiles.SetThemeAsync(db, UserId, theme))
         {
-            await db.Users.Where(u => u.Id == UserId).ExecuteUpdateAsync(s => s.SetProperty(u => u.Theme, theme));
             SessionService.Invalidate();
         }
 

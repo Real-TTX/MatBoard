@@ -35,6 +35,7 @@ src/MatBoard
                              BoardService (list/create/update/delete/duplicate, members, link), BoardItems (load, apply a batch of add/upd/del ops with validation: kinds, numbers, colours, no SVG pictures,
                              size limits, d merged key by key, one lock per board, Revision +1 per batch), BoardRooms (the WebSocket rooms: peers, cursors, broadcast, Revalidate after rights change),
                              BoardEndpoints (GET /live/boards/{id} snapshot, /live/boards/{id}/ws; Origin check; both AllowAnonymous because links give guests access)
+  Services/Accounts/          static too: Profiles (the own account of a person: profile, theme, password), UserAdmin (accounts for administrators; every function checks that the actor is an active administrator; the last administrator stays)
   Services/Mail/MailService  MatSMTP through MailKit, queued in the background; off unless MATSMTP_HOST is set
   Services/Auth/             CurrentUser, PasswordService, SessionService (sessions in the DB), AccountService, ExternalSignInService (MatIdentity), AccountDataService (GDPR export/erase)
   Services/                  Ui (icons, logo), MenuService, InstanceService (numbers, settings, housekeeping), ListModels (toolbar, pager), Dates, Assets
@@ -65,7 +66,7 @@ runs after members/link change. Pictures are bitmap data addresses only. The CSP
 are pages of their own. Icons via `Ui.Icon` (toolkit sprite + `wwwroot/img/app-icons.svg`; a missing name is a bug). Every `td` has `data-label`. The version at the foot of the menu links to `/About`.
 
 **Code**: Microsoft C# guidelines, file-scoped namespaces, `.editorconfig`. The business layer is static classes taking the `AppDbContext` and the actor. No database queries in page models or views
-beyond calling the business layer (the copied account/admin pages predate this and are left as they are). English identifiers and comments, UI texts only in the catalog.
+beyond calling the business layer. English identifiers and comments, UI texts only in the catalog.
 
 **Compose files**: no environment variables to set, no placeholders; a stack (`name:`) per file; `docker-compose.yml` (release), `.dev.yml` (nightly + pgAdmin), `.local.yml` (build + pgAdmin).
 

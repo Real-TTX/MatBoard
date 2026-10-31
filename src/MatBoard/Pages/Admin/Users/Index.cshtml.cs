@@ -1,11 +1,9 @@
 using MatBoard.Localization;
 using MatBoard.Data;
 using MatBoard.Services;
-using Microsoft.EntityFrameworkCore;
+using MatBoard.Services.Accounts;
 
 namespace MatBoard.Pages.Admin.Users;
-
-public sealed record UserRow(long Id, string DisplayName, string Email, UserRole Role, bool IsActive, bool Locked, DateTime? LastLogin, DateTime Created, int Boards);
 
 /// <summary>The accounts of the installation. An administrator sees how many boards a person owns, never what is on them.</summary>
 public sealed class IndexModel(AppDbContext db) : AppPageModel
@@ -27,56 +25,12 @@ public sealed class IndexModel(AppDbContext db) : AppPageModel
         var state = ListQuery.Text(Request, "state");
         var sort = ListQuery.Text(Request, "sort") ?? "name";
         var desc = ListQuery.Descending(Request);
-        var now = DateTime.UtcNow;
-
-        var query = db.Users.AsNoTracking();
-        if (search is not null)
-        {
-            var s = search.ToLower();
-            query = query.Where(u => u.DisplayName.ToLower().Contains(s) || u.Email.Contains(s));
-        }
-
-        if (role == "admin")
-        {
-            query = query.Where(u => u.Role == UserRole.Admin);
-        }
-        else if (role == "user")
-        {
-            query = query.Where(u => u.Role == UserRole.User);
-        }
-
-        if (state == "active")
-        {
-            query = query.Where(u => u.IsActive);
-        }
-        else if (state == "disabled")
-        {
-            query = query.Where(u => !u.IsActive);
-        }
-
-        query = (sort, desc) switch
-        {
-            ("email", false) => query.OrderBy(u => u.Email),
-            ("email", true) => query.OrderByDescending(u => u.Email),
-            ("login", false) => query.OrderBy(u => u.LastLoginDate),
-            ("login", true) => query.OrderByDescending(u => u.LastLoginDate),
-            ("created", false) => query.OrderBy(u => u.CreateDate),
-            ("created", true) => query.OrderByDescending(u => u.CreateDate),
-            (_, true) => query.OrderByDescending(u => u.DisplayName),
-            _ => query.OrderBy(u => u.DisplayName),
-        };
-
-        var total = await db.Users.CountAsync();
-        var matching = await query.CountAsync();
         var page = ListQuery.Page(Request);
-        Items = (await query.Skip((page - 1) * PageSize).Take(PageSize)
-                .Select(u => new
-                {
-                    u.Id, u.DisplayName, u.Email, u.Role, u.IsActive, u.LockoutUntil, u.LastLoginDate, u.CreateDate,
-                    Boards = db.Boards.Count(b => b.OwnerId == u.Id),
-                })
-                .ToListAsync())
-            .Select(u => new UserRow(u.Id, u.DisplayName, u.Email, u.Role, u.IsActive, u.LockoutUntil > now, u.LastLoginDate, u.CreateDate, u.Boards)).ToList();
+        var list = await UserAdmin.ListAsync(db, UserId, new UserCriteria(search, role, state, sort, desc, page, PageSize), HttpContext.RequestAborted)
+                   ?? new UserList([], 0, 0);
+        Items = list.Items;
+        var total = list.Total;
+        var matching = list.Matching;
 
         Toolbar = new ToolbarModel
         {

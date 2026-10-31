@@ -1,8 +1,8 @@
-using MatBoard.Localization;
 using MatBoard.Data;
+using MatBoard.Localization;
 using MatBoard.Services;
+using MatBoard.Services.Accounts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace MatBoard.Pages.Account;
 
@@ -21,28 +21,13 @@ public sealed class PasswordModel(AppDbContext db, PasswordService passwords, Se
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var user = await db.Users.FirstAsync(u => u.Id == UserId);
-        if (!passwords.Verify(user.PasswordHash, Current))
+        if (await Profiles.ChangePasswordAsync(db, passwords, UserId, Current, New, Repeat, HttpContext.RequestAborted) is { } error)
         {
-            ModelState.AddModelError(nameof(Current), Text.T("Password.Current.Wrong"));
-        }
-        else if (PasswordService.Check(New, user.Email) is { } problem)
-        {
-            ModelState.AddModelError(nameof(New), problem);
-        }
-        else if (New != Repeat)
-        {
-            ModelState.AddModelError(nameof(Repeat), Text.T("Password.Mismatch"));
-        }
-
-        if (!ModelState.IsValid)
-        {
+            ModelState.AddModelError(error.Field, error.Message);
             return Page();
         }
 
-        user.PasswordHash = passwords.Hash(New);
-        await db.SaveChangesAsync();
-        await sessions.RevokeAllAsync(user.Id, SessionService.CurrentSessionId(HttpContext));
+        await sessions.RevokeAllAsync(UserId, SessionService.CurrentSessionId(HttpContext));
         Flash(Text.T("Password.Changed"));
         return LocalRedirect("/Account/Password");
     }

@@ -1,9 +1,9 @@
 using MatBoard.Data;
 using MatBoard.Localization;
 using MatBoard.Services;
+using MatBoard.Services.Accounts;
 using MatBoard.Services.Auth;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace MatBoard.Pages.Account;
 
@@ -14,7 +14,7 @@ public sealed class DataModel(AppDbContext db, AccountDataService data, Password
 
     public string Email { get; private set; } = string.Empty;
 
-    public async Task OnGetAsync() => Email = await db.Users.Where(u => u.Id == UserId).Select(u => u.Email).FirstAsync();
+    public async Task OnGetAsync() => Email = (await Profiles.GetAsync(db, UserId, HttpContext.RequestAborted))?.Email ?? string.Empty;
 
     /// <summary>The export: a file to keep or to take to another app.</summary>
     public async Task<IActionResult> OnGetExportAsync()
@@ -25,21 +25,25 @@ public sealed class DataModel(AppDbContext db, AccountDataService data, Password
 
     public async Task<IActionResult> OnPostDeleteAsync()
     {
-        var user = await db.Users.FirstAsync(u => u.Id == UserId);
-        Email = user.Email;
-        if (!passwords.Verify(user.PasswordHash, Password))
+        if (await Profiles.CheckPasswordAsync(db, passwords, UserId, Password, HttpContext.RequestAborted) is not { } check)
+        {
+            return NotFound();
+        }
+
+        Email = check.Email;
+        if (!check.Correct)
         {
             ModelState.AddModelError(nameof(Password), Text.T("Data.Delete.WrongPassword"));
             return Page();
         }
 
-        if (await data.IsLastAdminAsync(user.Id))
+        if (await data.IsLastAdminAsync(UserId))
         {
             ModelState.AddModelError(string.Empty, Text.T("Data.Delete.LastAdmin"));
             return Page();
         }
 
-        var id = user.Id;
+        var id = UserId;
         await sessions.SignOutAsync(HttpContext);
         await data.EraseAsync(id);
         TempData["Flash"] = Text.T("Data.Delete.Done");

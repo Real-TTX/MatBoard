@@ -21,6 +21,7 @@
   "Common.NameRequired": { "en": "Please enter a name.", "de": "Bitte einen Namen eingeben." },
   "Common.Never": { "en": "Never", "de": "Nie" },
   "Common.New": { "en": "New", "de": "Neu" },
+  "Common.NotAllowed": { "en": "You may not do this.", "de": "Das darfst du nicht." },
   "Common.Optional": { "en": "optional", "de": "optional" },
   "Common.Save": { "en": "Save", "de": "Speichern" },
   "Common.Saved": { "en": "Saved.", "de": "Gespeichert." },
