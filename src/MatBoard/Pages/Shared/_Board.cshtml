@@ -46,6 +46,12 @@
             <button type="button" class="mb-top__btn" id="mb-search-btn" aria-label="@L["Canvas.Search"]" data-tip="@L["Canvas.Search"] (Ctrl+F)"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-search"></use></svg></button>
             <button type="button" class="mb-top__btn" id="mb-comments-btn" aria-label="@L["Canvas.Comments"]" data-tip="@L["Canvas.Comments"]"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-message-square"></use></svg></button>
             <button type="button" class="mb-top__btn" id="mb-frames-btn" aria-label="@L["Canvas.Frames"]" data-tip="@L["Canvas.Frames"]"><svg class="mat-icon" aria-hidden="true" focusable="false"><use href="#mat-i-layers"></use></svg></button>
+            @* light / dark / system right on the board (matui cycles it; a signed-in person keeps the choice in the account, a guest in this browser) *@
+            <button type="button" class="mb-top__btn mb-theme" id="mb-theme-btn" data-theme-toggle data-theme-state="system"@Html.Raw(guest ? string.Empty : " data-theme-save-url=\"/Account?handler=Theme\"") aria-label="@L["Shell.Theme"]">
+                <svg class="mat-icon" data-theme-icon="system" aria-hidden="true" focusable="false"><use href="#mat-i-monitor"></use></svg>
+                <svg class="mat-icon" data-theme-icon="light" aria-hidden="true" focusable="false"><use href="#mat-i-sun"></use></svg>
+                <svg class="mat-icon" data-theme-icon="dark" aria-hidden="true" focusable="false"><use href="#mat-i-moon"></use></svg>
+            </button>
             <button type="button" class="mb-top__btn" id="mb-export-btn" data-menu-toggle="mb-export-menu" aria-haspopup="menu" aria-expanded="false" aria-label="@L["Canvas.Export"]" data-tip="@L["Canvas.Export"]">@Ui.Icon("download")</button>
             @if (Model.Role == BoardRole.Owner)
             {

@@ -47,7 +47,7 @@ src/MatBoard
   wwwroot/js/board-core.js   state, drawing (SVG), geometry, applying changes, history (undo/redo). Item = {id,k,x,y,w,h,r,z,d}; op = add | upd | del; null in d removes a key
   wwwroot/js/board-net.js    snapshot load (+ copy in Cache Storage "mb-boards"), WebSocket, queue of unconfirmed ops (localStorage mb.q.<board>, replayed after reconnect), presence, cursors
   wwwroot/js/board-ui.js     tools, pointer gestures (mouse/pen/touch, pinch), selection + handles, alignment guides, quick connect, lock, text editing overlay, bar over the selection, clipboard, images, export, keys; exposes MB.ui
-  wwwroot/js/board-extras.js the side panel (templates, comment threads, frames, search), presenting frames, minimap, following a person, summon
+  wwwroot/js/board-extras.js the side panel (templates, comment threads, frames, search), presenting frames, minimap, following a person, summon, the tooltips of the board (one floating .mb-tip kept inside the window; the toolkit's ::after tips are off on the board)
   wwwroot/css/app.css        accent + few app styles (prefix mb-);  board.css = the board page
   wwwroot/sw.js              service worker: static cache, last board pages offline, offline.html; clears on sign-out (pwa.js)
 tests/MatBoard.Tests         unit + database tests

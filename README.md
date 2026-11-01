@@ -1,61 +1,144 @@
+<div align="center">
+
+<img src="docs/logo/matboard-mark.svg" width="96" alt="MatBoard" />
+
 # MatBoard
 
-Ein digitales **Whiteboard** für die Zusammenarbeit im Team – in der Art von Miro: Ideen sammeln, Notizen schreiben, Aufgaben planen und Konzepte visuell darstellen, auf einer endlosen Fläche. Mehrere Personen arbeiten **gleichzeitig** an einem Board, jede Änderung erscheint in Echtzeit bei allen anderen.
+**Das digitale Whiteboard für Teams – wie Miro, aber selbst gehostet: Ideen sammeln, Workshops moderieren, Pläne zeichnen, alle gleichzeitig.**
 
-![Ein Board](docs/images/board.png)
+Ein App-Container und PostgreSQL. Port **3945**.
 
-## Funktionen
+</div>
 
-- **Endlose Fläche** mit Zoom und Verschieben (Maus, Trackpad, Touch mit zwei Fingern), Hintergrund Punkte / Raster / Linien / leer.
-- **Werkzeuge:** Haftnotizen, Text, Rechteck, Ellipse, Raute, Dreieck, **Verbindungen** (gerade, Kurve, Winkel, Pfeilspitzen, haften an Formen und folgen ihnen), Rahmen (nehmen ihren Inhalt mit), Stift, Bilder (Auswahl, Einfügen, Ziehen).
-- **Bearbeiten:** Auswahl per Klick oder Rechteck, Verschieben, Skalieren, Drehen, Farben, Textgröße, Reihenfolge, Duplizieren, Kopieren / Einfügen, **Rückgängig / Wiederholen**, Tastaturkürzel (siehe *Über*).
-- **Echtzeit:** Wer ist auf dem Board, Cursor mit Namen, Änderungen live (WebSocket). Gleichzeitige Änderungen am selben Objekt werden feldweise zusammengeführt.
-- **Teilen:** Personen mit Konto als *Bearbeiter* oder *Betrachter* einladen (auf Wunsch mit E-Mail über MatSMTP), oder einen **Link** herausgeben (ansehen / bearbeiten, Gäste nennen einen Namen). Ein neuer Link macht den alten ungültig; Rechte werden sofort durchgesetzt, auch für offene Verbindungen.
-- **Workshop wie in Miro:** Vorlagen (Kanban, Retrospektive, Mindmap, SWOT, Wochenplan, Flussdiagramm, Customer Journey), **Kommentare** als Pins mit Antworten und „erledigt“, **Stempel** (👍 ❤️ ⭐ ✅ +1 …), **Sperren** von Objekten, **Schnell-Verbinden** (die Punkte neben einer Notiz legen eine verbundene Kopie an), **Ausrichtungslinien** beim Verschieben, **Suche** auf dem Board, **Übersichtskarte** (Minimap), **Frames präsentieren** (Folie für Folie, Vollbild), einer Person **folgen** (Klick auf ihren Avatar) und **alle zu mir holen**.
-- **Export:** PNG, SVG, JSON.
-- **PWA:** installierbar (Android, iOS, Desktop), Safe Areas und Statusleiste abgestimmt, kein ungewolltes Zoomen. **Offline:** das zuletzt geladene Board bleibt sichtbar, Änderungen werden auf dem Gerät gesammelt und nach der Wiederverbindung abgeglichen.
-- **Mattiverse:** Anmeldung über **MatIdentity**, E-Mails über **MatSMTP**, Plattform-Schnittstelle (`/api`) für Mattiverse.
-- Oberfläche auf Deutsch und Englisch, hell / dunkel, Design **MatDesign** (MatUi).
+![Ein Board mit Mindmap und Kanban: Stempel, ein Kommentar und der Cursor einer zweiten Person, live](docs/images/board.png)
 
-| Boards | Teilen | Handy |
-|---|---|---|
-| ![Liste](docs/images/boards.png) | ![Link](docs/images/board-share.png) | ![Handy](docs/images/phone-board.png) |
+---
+
+## Auf einen Blick
+
+**Die Fläche**
+- **Endlose Fläche** mit Zoom und Verschieben – Maus, Trackpad, Stift, zwei Finger auf dem Smartphone; Hintergrund Punkte, Raster, Linien oder leer
+- **Haftnotizen**, **Text**, **Formen** (Rechteck, Ellipse, Raute, Dreieck), **Stift**, **Bilder** (auswählen, einfügen, hineinziehen)
+- **Verbindungen**: gerade, als Kurve oder im Winkel, mit Pfeilspitzen; sie haften an Formen und folgen ihnen
+- **Frames** fassen Dinge zusammen und nehmen ihren Inhalt beim Verschieben mit
+- Auswahl per Klick oder Rechteck, **Verschieben, Skalieren, Drehen**, Farben, Schriftgröße, Reihenfolge, Duplizieren, Kopieren und Einfügen, **Rückgängig / Wiederholen**
+- **Ausrichtungslinien** beim Verschieben (Alt schaltet sie ab), **Schnell-Verbinden**: die Punkte neben einer Notiz legen eine verbundene Kopie an
+- **Sperren** von Objekten (Strg+Umschalt+L) – gesperrt heißt auch für alle anderen gesperrt, der Server setzt es durch
+- **Export** als PNG, SVG oder JSON
+
+**Workshops wie in Miro**
+- **Vorlagen**: Kanban-Board, Retrospektive, Mindmap, SWOT-Analyse, Wochenplan, Flussdiagramm, Customer Journey – eingefügt, wo man gerade hinschaut
+- **Kommentare** als Pins mit Antworten, „erledigt“ und einer Liste aller Kommentare
+- **Stempel** 👍 ❤️ ⭐ ✅ 💡 🎉 +1 … zum Abstimmen und Markieren
+- **Präsentieren**: Frames nacheinander als Folien, mit Pfeiltasten, im Vollbild
+- **Suche** auf dem Board (Strg+F, Enter springt zum nächsten Treffer) und eine **Übersichtskarte** (M)
+
+**Zusammen arbeiten**
+- **Live**: Wer ist da, Cursor mit Namen, jede Änderung erscheint sofort bei allen (WebSocket). Gleichzeitige Änderungen am selben Objekt werden Feld für Feld zusammengeführt
+- **Folgen**: ein Klick auf einen Avatar, und man sieht, was diese Person sieht; **Alle zu mir holen** bringt alle an die eigene Stelle
+- **Teilen** mit Personen, die ein Konto haben – als *Bearbeiter* oder *Betrachter*, auf Wunsch mit E-Mail (MatSMTP) – oder per **Link** zum Ansehen oder Bearbeiten; Gäste nennen nur einen Namen. Ein neuer Link macht den alten ungültig; Rechte gelten sofort, auch für offene Verbindungen
+- **Offline**: das zuletzt geladene Board bleibt sichtbar, Änderungen werden auf dem Gerät gesammelt und nach der Wiederverbindung abgeglichen
+
+**Oberfläche**
+- **Deutsch und Englisch**, **hell / dunkel** – umschaltbar auch direkt auf dem Board –, Farbschemata (Standard, Papier, hoher Kontrast, OLED)
+- **Smartphone**: die Werkzeuge rutschen nach unten, Fenster werden zu Bottom Sheets, 44-px-Ziele; als **PWA** installierbar (Android, iOS, Desktop)
+- Kurzbefehle für alle Werkzeuge (V H N T R L P F C S I), Tooltips zeigen sie an; die ganze Liste steht unter *Über*
+- **Deine Daten (DSGVO)**: alles als JSON herunterladen und das Konto endgültig löschen
+- Design von [MatDesign](https://github.com/Real-TTX/MatDesign) (MatUi). Das erste Konto ist der Administrator
+
+## Screenshots
+
+| Kommentare mit Antworten | Vorlagen |
+|---|---|
+| ![Ein Kommentar-Thread am Board](docs/images/comments.png) | ![Die Vorlagen im Seitenpanel](docs/images/templates.png) |
+
+| Dunkel, mit der Leiste über der Auswahl | Einer Person folgen |
+|---|---|
+| ![Das Board im dunklen Design](docs/images/board-dark.png) | ![Jonas folgt Mia](docs/images/follow.png) |
+
+| Präsentieren | Boards |
+|---|---|
+| ![Ein Frame als Folie](docs/images/present.png) | ![Die Liste der Boards](docs/images/boards.png) |
+
+| Personen einladen | Per Link teilen |
+|---|---|
+| ![Personen eines Boards](docs/images/board-members.png) | ![Der Link eines Boards](docs/images/board-share.png) |
+
+| Konto | Benutzer (Administration) |
+|---|---|
+| ![Das eigene Konto](docs/images/account.png) | ![Benutzer](docs/images/users.png) |
+
+| Smartphone | | | |
+|---|---|---|---|
+| ![Ein Board auf dem Smartphone](docs/images/phone-board.png) | ![Vorlagen auf dem Smartphone](docs/images/phone-templates.png) | ![Stempel, dunkel](docs/images/phone-dark.png) | ![Boards auf dem Smartphone](docs/images/phone-list.png) |
 
 ## Starten
 
 ```bash
-docker compose up -d
+docker compose up -d                                       # Release (Branch main, Image :latest)
+docker compose -f docker-compose.dev.yml up -d             # Development (Branch dev, Image :nightly) mit pgAdmin auf 3946
+docker compose -f docker-compose.local.yml up -d --build   # lokal aus dem Quellcode, mit pgAdmin (3946) und Postgres auf 3947
 ```
 
-Dann **http://localhost:3945** öffnen. Das erste Konto, das sich registriert, ist der Administrator. Danach legt der Administrator Konten an (oder öffnet die Registrierung unter *Administration → System*).
+Dann **http://localhost:3945** öffnen und registrieren – das erste Konto ist Administrator. Danach ist die Registrierung **geschlossen**: weitere Konten legt ein Administrator an (*Administration → Benutzer*), oder er öffnet die Registrierung (*Administration → System*).
 
-Der Stack hat zwei Container (`web`, `db` mit PostgreSQL 17) und zwei Volumes (`web-data` für die Schlüssel der Sitzungen, `db-data` für die Datenbank). Es gibt **keine** Variablen, die man setzen muss. Optional (setzt Mattiverse, wenn es MatBoard installiert):
-
-| Variable | Wirkung |
-|---|---|
-| `MATIDENTITY_AUTHORITY`, `MATIDENTITY_CLIENT_ID`, `MATIDENTITY_CLIENT_SECRET`, `MATIDENTITY_INTERNAL_URL` | Anmeldung über MatIdentity |
-| `MATSMTP_HOST`, `MATSMTP_PORT`, `MATSMTP_USERNAME`, `MATSMTP_PASSWORD`, `MATSMTP_FROM`, `MATSMTP_TLS` | E-Mail über MatSMTP (ohne sie versendet MatBoard keine Mails) |
-| `MAT_API_KEY` | Schlüssel der Plattform-Schnittstelle `/api/*` |
-
-Hinter einem Reverse Proxy müssen **WebSockets** durchgereicht werden (`/live/boards/{id}/ws`) und `X-Forwarded-Proto` / `X-Forwarded-Host` gesetzt sein.
-
-## Branches, Versionen, Images
-
-| Branch | Version | Image | Compose |
+| Datei | Branch | Image | Dienste |
 |---|---|---|---|
-| `main` | `<major>.<minor>.<build>-<datum>`, z. B. `0.1.42-20261031` | `ghcr.io/real-ttx/matboard:latest` | `docker-compose.yml` |
-| `dev` | `nightly-<build>-<datum>` | `ghcr.io/real-ttx/matboard:nightly` | `docker-compose.dev.yml` (mit pgAdmin) |
-| lokal | `local-<datum>` | `matboard:local` | `docker-compose.local.yml` (baut aus dem Ordner, mit pgAdmin) |
+| `docker-compose.yml` | main | `ghcr.io/real-ttx/matboard:latest` | web, db |
+| `docker-compose.dev.yml` | dev | `ghcr.io/real-ttx/matboard:nightly` | web, db, pgadmin |
+| `docker-compose.local.yml` | – | lokal gebaut (`matboard:local`) | web, db, pgadmin |
 
-Die GitHub Action (`.github/workflows/build.yml`) baut, testet und veröffentlicht das Image (amd64 + arm64) für beide Branches. Die Build-Nummer ist die Nummer des Workflow-Laufs. Die Version steht links unten im Menü und führt zur *Über*-Seite.
+Volumes je Stack: `web-data` (Schlüssel der Sitzungen) und `db-data` (PostgreSQL 17), bei dev/local zusätzlich `pgadmin-data`. Die Compose-Dateien brauchen **keine** Variablen. Für den Betrieb im Internet das Datenbank-Passwort ändern und einen TLS-Proxy (Caddy, Traefik) davorsetzen – der muss **WebSockets** durchreichen (`/live/boards/{id}/ws`) und `X-Forwarded-Proto` / `X-Forwarded-Host` setzen.
 
-## Entwickeln
+### Einstellungen (Umgebung)
 
-```powershell
-./scripts/redeploy.ps1          # baut den Container neu und startet den lokalen Stack: http://localhost:3945, pgAdmin http://localhost:3946
-./scripts/redeploy.ps1 -Clean   # dasselbe mit leerer Datenbank
-dotnet build MatBoard.slnx
-dotnet test                     # mit MATBOARD_TEST_DB (PostgreSQL, Recht zum Anlegen von Datenbanken) laufen auch die Datenbank-Tests
-```
+Keine davon ist nötig; ohne sie läuft MatBoard allein mit eigenen Konten und ohne E-Mails. Mattiverse setzt sie, wenn es MatBoard installiert.
 
-Technik: ASP.NET Core 10, Razor Pages, EF Core + PostgreSQL, MatUi (CSS + ein Skript, ohne Build-Schritt), Canvas als SVG mit eigenem JavaScript (`wwwroot/js/board-*.js`), WebSocket ohne zusätzliche Bibliothek. Mehr in [CLAUDE.md](CLAUDE.md).
+| Variable | Bedeutung |
+|---|---|
+| `ConnectionStrings__Default` | Verbindung zu PostgreSQL (Standard im Image: `Host=db;Database=matboard;Username=matboard;Password=matboard`) |
+| `MAT_API_KEY` | Schlüssel für die Plattform-API `/api/*` (Header `X-Api-Key`) |
+| `MATIDENTITY_AUTHORITY`, `MATIDENTITY_CLIENT_ID`, `MATIDENTITY_CLIENT_SECRET`, `MATIDENTITY_INTERNAL_URL` | Anmeldung über MatIdentity |
+| `MATSMTP_HOST`, `MATSMTP_PORT`, `MATSMTP_USERNAME`, `MATSMTP_PASSWORD`, `MATSMTP_FROM`, `MATSMTP_TLS` | E-Mails über MatSMTP (z. B. „Ein Board wurde mit dir geteilt“) |
+
+## Plattform (Mattiverse, MatIdentity)
+
+MatBoard erfüllt den Plattform-Vertrag der Mat-Apps ([MatDesign `docs/PLATFORM.md`](https://github.com/Real-TTX/MatDesign/blob/main/docs/PLATFORM.md), Paket MatPlatform 1.4.0 in `src/MatBoard/MatPlatform`, eine Kopie).
+
+| Endpunkt | Inhalt | Zugriff |
+|---|---|---|
+| `GET /api` | Beschreibung: Seiten *Übersicht* und *Einstellungen*, Kacheln, Felder, Schaltflächen, Rollen `admin`/`user` | anonym |
+| `GET /api/health` | `ok` / `degraded` (kein aktiver Administrator) / `down` (Datenbank weg) | anonym |
+| `GET /api/state[/{key}]` | Kacheln: aktive Benutzer, Boards, geteilte Boards, Boards mit Link, Objekte, geändert in 7 Tagen, Registrierung, letzte Änderung | Schlüssel oder Token |
+| `GET`/`PUT /api/configure` | Registrierung offen, öffentliche Adresse | Schlüssel oder Token |
+| `POST /api/actions/cleanUp` | beendete Sitzungen und vor über 30 Tagen gelöschte Boards endgültig entfernen | Schlüssel oder Token |
+
+**Anmeldung über MatIdentity** (nur mit `MATIDENTITY_AUTHORITY`): OpenID Connect mit PKCE, Back-Channel-Logout unter `/signout-backchannel`. Lokale Anmeldung bleibt unter `/Account/Login?local=1` erreichbar.
+
+## Entwicklung
+
+- .NET 10, ASP.NET Core **Razor Pages**, EF Core + **PostgreSQL**, MatUi-Toolkit von MatDesign (kopiert nach `wwwroot/matui`), das Board als SVG mit eigenem JavaScript ohne Build-Schritt (`wwwroot/js/board-*.js`), WebSocket ohne Zusatzbibliothek
+- Geschäftslogik in statischen Klassen mit Rechteprüfung in jeder Funktion (`Services/Boards`, `Services/Accounts`); keine Datenbankabfragen in Seiten
+- `dotnet build MatBoard.slnx`, `dotnet test` – mit `MATBOARD_TEST_DB` (z. B. `Host=localhost;Port=3947;Username=matboard;Password=matboard;Database=postgres`) laufen auch die Datenbank-Tests, jeder in einer eigenen Datenbank
+- `./scripts/redeploy.ps1` baut den Container neu und startet den lokalen Stack (`-Clean` = leere Datenbank)
+- Migrationen: `dotnet ef migrations add <Name> -p src/MatBoard -o Data/Migrations` (werden beim Start angewendet)
+- Texte: `src/MatBoard/Resources/Texts/*.json` (`{"en": …, "de": …}`); ein Test prüft, dass jeder benutzte Schlüssel in beiden Sprachen existiert
+- Mehr zur Architektur in [CLAUDE.md](CLAUDE.md)
+
+### Versionierung und Branches
+
+| Branch | Kanal | Version | Image-Tags |
+|---|---|---|---|
+| `main` | Release | `0.1.<build>-<datum>` | `<version>`, `latest`, `release` |
+| `dev` | Nightly | `nightly-<build>-<datum>` | `<version>`, `nightly` |
+| andere / lokal | Local | `local-<datum>` | – |
+
+Major/Minor stehen in `Directory.Build.props`; die GitHub Action `.github/workflows/build.yml` baut, testet und veröffentlicht die Images (amd64 + arm64) nach `ghcr.io/real-ttx/matboard`. Die Version steht unten im Menü und führt zur *Über*-Seite.
+
+## Logo
+
+| Favicon (16–32 px) | App-Icon | Maskable (PWA) | Logo hell | Logo dunkel | Einfarbig |
+|---|---|---|---|---|---|
+| <img src="docs/logo/matboard-favicon.svg" width="32"> | <img src="docs/logo/matboard-mark.svg" width="64"> | <img src="docs/logo/matboard-maskable.svg" width="64"> | <img src="docs/logo/matboard-logo.svg" width="200"> | <img src="docs/logo/matboard-logo-dark.svg" width="200"> | <img src="docs/logo/matboard-mono.svg" width="64"> |
+
+Zwei übereinanderliegende Haftnotizen auf dem MatBoard-Gelb **#FFC21F** – nah an Miros Gelb; Schrift darauf ist fast schwarz.

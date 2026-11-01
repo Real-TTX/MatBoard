@@ -155,10 +155,16 @@
   }
   MB.wrap = wrap;
 
-  /** The text in a box: the font gets smaller (to 10) until it fits the height. */
+  /** The widest word of a text at a font size. */
+  function widestWord(text, fs) {
+    measure.font = fs + 'px ' + FONT;
+    return String(text).split(/\s+/).reduce(function (w, word) { return Math.max(w, measure.measureText(word).width); }, 0);
+  }
+
+  /** The text in a box: the font gets smaller (to 10) until it fits the height and no word has to be broken. */
   function fit(text, fs, bw, bh) {
     var size = fs, lines = wrap(text, size, bw);
-    while (isFinite(bh) && size > 10 && lines.length * size * 1.25 > bh) { size -= 1; lines = wrap(text, size, bw); }
+    while (isFinite(bh) && size > 10 && (lines.length * size * 1.25 > bh || widestWord(text, size) > bw)) { size -= 1; lines = wrap(text, size, bw); }
     return { fs: size, lines: lines };
   }
   MB.fitText = fit;

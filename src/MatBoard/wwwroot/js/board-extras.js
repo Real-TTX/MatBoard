@@ -504,8 +504,61 @@
   new MutationObserver(updateSummon).observe(presence, { childList: true });
   MB.on('role', updateSummon);
 
+  // ---- tooltips: one floating tip, beside the control (data-tip-place="right|below|above"; at the top of the window below, else above), always inside the window ----
+  var tip = document.createElement('div');
+  tip.className = 'mb-tip';
+  tip.setAttribute('role', 'tooltip');
+  tip.hidden = true;
+  root.appendChild(tip);
+  var tipFor = null, tipTimer = 0;
+  function tipText(el) { return el.getAttribute('data-tip') || (el.hasAttribute('data-theme-toggle') ? el.getAttribute('aria-label') : '') || ''; }
+  function placeTip(el) {
+    var text = tipText(el);
+    if (!text || !el.isConnected || el.offsetParent === null) { hideTip(); return; }
+    // matui gives the theme button a title as well: the browser's own tip would show over this one
+    if (el.hasAttribute('title')) { el.removeAttribute('title'); }
+    tip.textContent = text;
+    tip.hidden = false;
+    var r = el.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight, gap = 8, edge = 6;
+    var w = tip.offsetWidth, h = tip.offsetHeight, x, y;
+    var place = el.getAttribute('data-tip-place') || (r.top < 90 ? 'below' : 'above');
+    // the tool column turns into a row at the bottom on a phone: there is no room beside it
+    if (place === 'right' && r.right + gap + w > W - edge) { place = 'above'; }
+    if (place === 'right' && el.closest('.mb-tools') && getComputedStyle(el.closest('.mb-tools')).flexDirection === 'row') { place = 'above'; }
+    if (place === 'right') { x = r.right + gap; y = r.top + r.height / 2 - h / 2; }
+    else {
+      x = r.left + r.width / 2 - w / 2;
+      y = place === 'below' ? r.bottom + gap : r.top - gap - h;
+      if (y < edge) { y = r.bottom + gap; } else if (y + h > H - edge) { y = r.top - gap - h; }
+    }
+    x = Math.max(edge, Math.min(W - w - edge, x));
+    y = Math.max(edge, Math.min(H - h - edge, y));
+    tip.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+  }
+  function showTip(el, delay) {
+    clearTimeout(tipTimer);
+    tipFor = el;
+    tipTimer = setTimeout(function () { if (tipFor === el) { placeTip(el); } }, delay);
+  }
+  function hideTip() { clearTimeout(tipTimer); tipFor = null; tip.hidden = true; }
+  function tipTarget(node) { var el = node && node.closest ? node.closest('[data-tip], [data-theme-toggle]') : null; return el && root.contains(el) ? el : null; }
+  root.addEventListener('pointerover', function (e) {
+    if (e.pointerType !== 'mouse') { return; }
+    var el = tipTarget(e.target);
+    if (el && el !== tipFor) { showTip(el, tip.hidden ? 350 : 0); } else if (!el) { hideTip(); }
+  });
+  root.addEventListener('pointerout', function (e) { if (tipFor && !(e.relatedTarget && tipFor.contains(e.relatedTarget))) { hideTip(); } });
+  root.addEventListener('focusin', function (e) { var el = tipTarget(e.target); if (el && el.matches(':focus-visible')) { showTip(el, 0); } });
+  root.addEventListener('focusout', hideTip);
+  root.addEventListener('pointerdown', hideTip, true);
+  root.addEventListener('wheel', hideTip, { passive: true });
+  // a tip that changes while it is shown (the theme after a click, following somebody) is read again
+  new MutationObserver(function () { if (tipFor && !tip.hidden) { placeTip(tipFor); } })
+    .observe(root, { subtree: true, attributes: true, attributeFilter: ['data-tip', 'aria-label'] });
+
   // ---- keys --------------------------------------------------------------------------------------------------------------------------------
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !tip.hidden) { hideTip(); }
     if (show) {
       if (e.key === 'Escape') { e.preventDefault(); endPresent(); return; }
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); e.stopImmediatePropagation(); present(show.index + 1); return; }
