@@ -51,9 +51,17 @@ builder.Services.AddSingleton<BoardRooms>();
 builder.Services.AddSingleton<MailService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<MailService>());
 
-// The Mat platform contract (MatDesign docs/PLATFORM.md): /api, /api/health, /api/state, /api/configure, /api/actions with MAT_API_KEY or a token of MatIdentity.
-// The package MatPlatform (a copy in MatPlatform/) serves the endpoints; MatBoardPlatform describes MatBoard and supplies the values through the services.
-var platform = builder.AddMatPlatform<MatBoardPlatform>(MatBoardPlatform.Describe, o => o.DefaultLanguage = Languages.Default);
+// The Mat platform contract (MatDesign docs/PLATFORM.md, contract 2): /api, /api/health, /api/state, /api/configure, /api/actions with MAT_API_KEY or a token of
+// MatIdentity, what MatBoard consumes (identity.oidc, mail.smtp: set by their variables; shown in Administration → Connections, the bindings kept in
+// /data/matplatform) and the contributions to a shell. The package MatPlatform (a copy in MatPlatform/) serves the endpoints; MatBoardPlatform describes MatBoard
+// and supplies the values through the services. MAT_PUBLIC_URL fixes the public address.
+var publicUrl = MatPlatformSettings.From(builder.Configuration, MatBoardPlatform.AppId).AppPublicUrl;
+var platform = builder.AddMatPlatform<MatBoardPlatform>(o => MatBoardPlatform.Describe(o, publicUrl), o =>
+{
+    o.DefaultLanguage = Languages.Default;
+    o.DataDirectory = dataDir;
+    o.ConnectionsAccess = http => Task.FromResult(http.User.IsInRole(nameof(UserRole.Admin)));
+});
 
 // The interface speaks English and German (MatBoard.Localization); every localizer reads the one catalog of JSON texts.
 builder.Services.AddSingleton<Microsoft.Extensions.Localization.IStringLocalizerFactory, CatalogLocalizerFactory>();

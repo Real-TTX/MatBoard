@@ -26,7 +26,8 @@
   "System.RegistrationOpen": { "en": "Registration open", "de": "Registrierung offen" },
   "System.RegistrationOpen.Hint": { "en": "Off: only administrators create new accounts.", "de": "Aus: nur Administratoren legen neue Konten an." },
   "System.PublicUrl": { "en": "Public address", "de": "Öffentliche Adresse" },
-  "System.PublicUrl.Hint": { "en": "For the webhook addresses MatBoard shows. Empty: the address the page is opened at.", "de": "Für die Webhook-Adressen, die MatBoard anzeigt. Leer: die Adresse, unter der die Seite gerade aufgerufen wird." },
+  "System.PublicUrl.Hint": { "en": "For shared links and the addresses in mails. Empty: the address the page is opened at.", "de": "Für geteilte Links und die Adressen in E-Mails. Leer: die Adresse, unter der die Seite gerade aufgerufen wird." },
+  "System.PublicUrl.Fixed": { "en": "Set by the variable MAT_PUBLIC_URL (Mattiverse sets it); it cannot be changed here.", "de": "Festgelegt durch die Variable MAT_PUBLIC_URL (Mattiverse setzt sie); hier lässt sie sich nicht ändern." },
   "System.PublicUrl.Invalid": { "en": "Please enter a full address like https://board.example.com, or leave it empty.", "de": "Bitte eine vollständige Adresse wie https://board.example.com eingeben, oder leer lassen." },
   "System.About": { "en": "About this installation", "de": "Über diese Installation" },
   "System.Version": { "en": "Version", "de": "Version" },
@@ -35,5 +36,8 @@
   "System.LinkedBoards": { "en": "Boards with a link", "de": "Boards mit Link" },
   "System.Items": { "en": "Objects on boards", "de": "Objekte auf Boards" },
   "System.Mail": { "en": "Mail", "de": "E-Mail" },
-  "System.Mail.Off": { "en": "Off (no MatSMTP)", "de": "Aus (kein MatSMTP)" }
+  "System.Mail.Off": { "en": "Off (no MatSMTP)", "de": "Aus (kein MatSMTP)" },
+
+  "Connections.Title": { "en": "Connections", "de": "Verbindungen" },
+  "Connections.Sub": { "en": "What MatBoard uses from other apps and adds to a home screen", "de": "Was MatBoard von anderen Apps nutzt und einem Home-Screen hinzufügt" }
 }

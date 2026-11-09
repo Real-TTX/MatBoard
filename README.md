@@ -98,20 +98,31 @@ Keine davon ist nötig; ohne sie läuft MatBoard allein mit eigenen Konten und o
 |---|---|
 | `ConnectionStrings__Default` | Verbindung zu PostgreSQL (Standard im Image: `Host=db;Database=matboard;Username=matboard;Password=matboard`) |
 | `MAT_API_KEY` | Schlüssel für die Plattform-API `/api/*` (Header `X-Api-Key`) |
+| `MAT_PUBLIC_URL` | öffentliche Adresse (für geteilte Links und E-Mails); solange sie gesetzt ist, steht sie auf *Administration → System* fest und lässt sich dort und über `/api/configure` nicht ändern – die dort gespeicherte Adresse bleibt und gilt wieder, wenn die Variable wegfällt |
+| `MAT_FRAME_ANCESTORS` | Adressen, die MatBoard in einem Frame zeigen dürfen (Mattiverse), durch Leerzeichen getrennt |
 | `MATIDENTITY_AUTHORITY`, `MATIDENTITY_CLIENT_ID`, `MATIDENTITY_CLIENT_SECRET`, `MATIDENTITY_INTERNAL_URL` | Anmeldung über MatIdentity |
 | `MATSMTP_HOST`, `MATSMTP_PORT`, `MATSMTP_USERNAME`, `MATSMTP_PASSWORD`, `MATSMTP_FROM`, `MATSMTP_TLS` | E-Mails über MatSMTP (z. B. „Ein Board wurde mit dir geteilt“) |
 
 ## Plattform (Mattiverse, MatIdentity)
 
-MatBoard erfüllt den Plattform-Vertrag der Mat-Apps ([MatDesign `docs/PLATFORM.md`](https://github.com/Real-TTX/MatDesign/blob/main/docs/PLATFORM.md), Paket MatPlatform 1.4.0 in `src/MatBoard/MatPlatform`, eine Kopie).
+MatBoard erfüllt den Plattform-Vertrag 2 der Mat-Apps ([MatDesign `docs/PLATFORM.md`](https://github.com/Real-TTX/MatDesign/blob/main/docs/PLATFORM.md), das App-Modell in `docs/APP-MODEL.md`; Paket MatPlatform 2.2.1 in `src/MatBoard/MatPlatform`, eine Kopie).
 
 | Endpunkt | Inhalt | Zugriff |
 |---|---|---|
-| `GET /api` | Beschreibung: Seiten *Übersicht* und *Einstellungen*, Kacheln, Felder, Schaltflächen, Rollen `admin`/`user` | anonym |
+| `GET /api` | Beschreibung: Seiten *Übersicht* und *Einstellungen*, Kacheln, Felder, Schaltflächen, Rollen `admin`/`user`, was MatBoard nutzt (`consumes`) und einem Home-Screen hinzufügt (`contributes`) | anonym |
 | `GET /api/health` | `ok` / `degraded` (kein aktiver Administrator) / `down` (Datenbank weg) | anonym |
 | `GET /api/state[/{key}]` | Kacheln: aktive Benutzer, Boards, geteilte Boards, Boards mit Link, Objekte, geändert in 7 Tagen, Registrierung, letzte Änderung | Schlüssel oder Token |
-| `GET`/`PUT /api/configure` | Registrierung offen, öffentliche Adresse | Schlüssel oder Token |
+| `GET`/`PUT /api/configure` | Registrierung offen, öffentliche Adresse (fest, solange `MAT_PUBLIC_URL` gesetzt ist) | Schlüssel oder Token |
 | `POST /api/actions/cleanUp` | beendete Sitzungen und vor über 30 Tagen gelöschte Boards endgültig entfernen | Schlüssel oder Token |
+| `GET /api/connections` | dasselbe wie die Seite *Verbindungen*, als JSON | Schlüssel oder Token |
+
+**Was MatBoard nutzt** – beides optional, gesetzt durch die Variablen oben: `identity.oidc` (Anmeldung über MatIdentity) und `mail.smtp` (E-Mails über MatSMTP). Eine andere App braucht MatBoard nicht; es bietet selbst nichts an (`provides` ist leer).
+
+**Verbindungen** (*Administration → Verbindungen*, `/Admin/Connections`, nur Administratoren): die Seite, die jede Mat-App hat (`<mat-connections />` aus MatPlatform) – was MatBoard nutzt, ob es durch die Variablen verbunden ist oder nicht (beides ist optional), und was es einem Home-Screen hinzufügt.
+
+**Was MatBoard einem Home-Screen hinzufügt** (Mattiverse zeigt es; ohne Mattiverse kostet es nichts, das Menü der App bleibt der Weg hinein):
+- das Symbol **MatBoard** (`/Boards`) mit dem Menü *Neues Board*, *Meine Boards* und *Mit mir geteilt*
+- für Administratoren die Widgets **Boards** (Boards, geteilte Boards, Boards mit Link, geändert in 7 Tagen) und **Aktive Benutzer**, gebildet aus den Kacheln von `/api/state`
 
 **Anmeldung über MatIdentity** (nur mit `MATIDENTITY_AUTHORITY`): OpenID Connect mit PKCE, Back-Channel-Logout unter `/signout-backchannel`. Lokale Anmeldung bleibt unter `/Account/Login?local=1` erreichbar.
 

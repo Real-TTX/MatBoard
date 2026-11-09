@@ -1,5 +1,6 @@
 using MatBoard.Data;
 using MatBoard.Localization;
+using MatPlatform;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatBoard.Services;
@@ -21,9 +22,13 @@ public sealed record CleanUpResult(int Sessions, int Boards);
 /// <summary>
 /// The installation as a whole: its numbers, the few settings of the system (registration, public address), the state of the database and the housekeeping.
 /// The admin page System, the platform contract (<c>Platform/MatBoardPlatform</c>) and the background housekeeping go through it, so none of them needs the database itself.
+/// A broker such as Mattiverse may set the public address (<c>MAT_PUBLIC_URL</c>): then it wins and the stored value stays as it is (it comes back when the variable goes).
 /// </summary>
-public sealed class InstanceService(AppDbContext db, AccountService accounts)
+public sealed class InstanceService(AppDbContext db, AccountService accounts, MatPlatformSettings platform)
 {
+    /// <summary>Does <c>MAT_PUBLIC_URL</c> set the public address (then it cannot be changed on the admin page or through the platform API)?</summary>
+    public bool PublicUrlFixed => platform.AppPublicUrl is not null;
+
     /// <summary>Can the database be reached (the health check)?</summary>
     public async Task<bool> CanConnectAsync(CancellationToken ct = default)
     {
@@ -62,19 +67,20 @@ public sealed class InstanceService(AppDbContext db, AccountService accounts)
         return $"PostgreSQL {cs.Host}:{cs.Port}/{cs.Database}";
     }
 
-    /// <summary>The settings of the system.</summary>
+    /// <summary>Whether sign-up is open and the public address in force: <c>MAT_PUBLIC_URL</c>, else the stored one; null = the address of the request.</summary>
     public async Task<(bool RegistrationOpen, string? PublicUrl)> SettingsAsync()
     {
         var s = await accounts.SettingsAsync();
-        return (s.RegistrationOpen, s.PublicUrl);
+        return (s.RegistrationOpen, platform.AppPublicUrl ?? NormalizePublicUrl(s.PublicUrl));
     }
 
     /// <summary>
-    /// Saves the settings of the system; a <c>null</c> leaves a value as it is, an empty address clears it. Answers the message for a public address that is not
-    /// an absolute http(s) address (nothing is saved then), else <c>null</c>.
+    /// Saves the settings of the system; a <c>null</c> leaves a value as it is, an empty address clears it. A public address that <c>MAT_PUBLIC_URL</c> sets is left
+    /// as it is. Answers the message for a public address that is not an absolute http(s) address (nothing is saved then), else <c>null</c>.
     /// </summary>
     public async Task<string?> SaveSettingsAsync(bool? registrationOpen, string? publicUrl)
     {
+        publicUrl = PublicUrlFixed ? null : publicUrl;
         string? url = null;
         if (publicUrl is not null)
         {

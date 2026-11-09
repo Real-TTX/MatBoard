@@ -5,12 +5,13 @@ using MatPlatform;
 namespace MatBoard.Platform;
 
 /// <summary>
-/// MatBoard as an app of the platform contract (MatDesign docs/PLATFORM.md) on the shared package MatPlatform (the folder <c>MatPlatform/</c>, a copy):
-/// how a consumer such as Mattiverse shows MatBoard (<see cref="Describe"/>: tiles, the few settings, buttons), its values and what its buttons do.
+/// MatBoard as an app of the platform contract (MatDesign docs/PLATFORM.md, contract 2) on the shared package MatPlatform (the folder <c>MatPlatform/</c>, a copy):
+/// how a consumer such as Mattiverse shows MatBoard (<see cref="Describe"/>: tiles, the few settings, buttons), what it consumes (the sign-in and the mail that their
+/// variables set), what it adds to a shell (the launcher MatBoard, two widgets for administrators), its values and what its buttons do.
 /// The settings are the two of the admin page System (registration, public address), kept in the same place (<see cref="InstanceService"/>).
 /// The values come from the services (no DbContext here: this is the web layer).
 /// </summary>
-public sealed class MatBoardPlatform(InstanceService instance, ILogger<MatBoardPlatform> log)
+public sealed class MatBoardPlatform(InstanceService instance, MatPlatformSettings settings, ILogger<MatBoardPlatform> log)
     : IMatPlatformState, IMatPlatformConfiguration, IMatPlatformActions, IMatPlatformHealth
 {
     /// <summary>The id of MatBoard in the platform (and the default client id at MatIdentity), as in MatDesign <c>AppRegistry.cs</c>.</summary>
@@ -19,21 +20,54 @@ public sealed class MatBoardPlatform(InstanceService instance, ILogger<MatBoardP
     /// <summary>The accent of MatBoard (a warm yellow, close to but not the same as the yellow of Miro, see <c>wwwroot/css/app.css</c>).</summary>
     public const string Accent = "#ffc21f";
 
-    /// <summary>The MatApiDefinition of MatBoard (<c>GET /api</c>); <c>auth</c> and <c>endpoints</c> are set by MatPlatform.</summary>
-    public static void Describe(MatPlatformBuilder o)
+    /// <summary>The picture of MatBoard (the mark of its logo), for the app and its launcher.</summary>
+    public const string Mark = "/img/logo/matboard-mark.svg";
+
+    /// <summary>The MatApiDefinition of MatBoard (<c>GET /api</c>) without <c>MAT_PUBLIC_URL</c>.</summary>
+    public static void Describe(MatPlatformBuilder o) => Describe(o, null);
+
+    /// <summary>
+    /// The MatApiDefinition of MatBoard (<c>GET /api</c>); <c>auth</c> and <c>endpoints</c> are set by MatPlatform. <paramref name="publicUrl"/> is the value of
+    /// <c>MAT_PUBLIC_URL</c>: while it is set, the field <c>publicUrl</c> is fixed.
+    /// </summary>
+    public static void Describe(MatPlatformBuilder o, string? publicUrl)
     {
         var T = o.T;
 
-        o.App(AppId, "MatBoard", T("Digitales Whiteboard für die Zusammenarbeit im Team", "A digital whiteboard for working together"), AppInfo.Version, "/img/logo/matboard-mark.svg", Accent, "/Boards");
+        o.App(AppId, "MatBoard", T("Digitales Whiteboard für die Zusammenarbeit im Team", "A digital whiteboard for working together"), AppInfo.Version, Mark, Accent, "/Boards");
+
+        // What MatBoard uses from other apps: the sign-in and the mail, both optional and set by their variables (no other app is needed for a board).
+        o.Consumes(MatCapabilities.IdentityOidc, optional: true);
+        o.Consumes(MatCapabilities.MailSmtp, optional: true);
+
+        // What MatBoard adds to the home screen of a shell (Mattiverse): the boards with the views of its menu, and two widgets for administrators.
+        o.Launcher("boards", "MatBoard", Mark, "/Boards");
+        o.QuickAction("boards", T("Neues Board", "New board"), "plus", url: "/Boards/Edit");
+        o.QuickAction("boards", T("Meine Boards", "My boards"), "user", url: "/Boards?scope=mine");
+        o.QuickAction("boards", T("Mit mir geteilt", "Shared with me"), "users", url: "/Boards?scope=shared");
+        o.Widget(new MatWidget("boards", T("Boards", "Boards"), MatWidgetKinds.Tiles, "medium")
+        {
+            Items = ["boards", "sharedBoards", "linkedBoards", "changedLast7Days"],
+            Icon = "grid",
+            Url = "/Admin/System",
+            Audience = MatAudience.Admin,
+        });
+        o.Widget(new MatWidget("users", T("Aktive Benutzer", "Active users"), MatWidgetKinds.Stat)
+        {
+            Items = ["users"],
+            Icon = "users",
+            Url = "/Admin/Users",
+            Audience = MatAudience.Admin,
+        });
 
         o.Page("overview", T("Übersicht", "Overview"), "dashboard",
             MatSection.Tiles("users", "boards", "sharedBoards", "linkedBoards", "items", "changedLast7Days", "registration", "lastActivity"),
-            MatSection.Actions("openApp", "openUsers", "openSystem", "cleanUp"));
+            MatSection.Actions("openApp", "openUsers", "openConnections", "openSystem", "cleanUp"));
         o.Page("settings", T("Einstellungen", "Settings"), "settings",
             MatSection.Form(T("Allgemein", "General"), "registrationOpen", "publicUrl"));
 
         o.Tile("users", T("Aktive Benutzer", "Active users"), icon: "users");
-        o.Tile("boards", T("Boards", "Boards"), icon: "layout");
+        o.Tile("boards", T("Boards", "Boards"), icon: "grid"); // an icon of the MatUi sprite: a consumer draws it with its own copy
         o.Tile("sharedBoards", T("Geteilte Boards", "Shared boards"), icon: "users");
         o.Tile("linkedBoards", T("Boards mit Link", "Boards with a link"), icon: "link");
         o.Tile("items", T("Objekte auf Boards", "Objects on boards"), icon: "layers");
@@ -45,15 +79,21 @@ public sealed class MatBoardPlatform(InstanceService instance, ILogger<MatBoardP
         {
             Hint = T("Aus: nur Administratoren legen Konten an.", "Off: only administrators create accounts."),
         });
-        o.Field(new MatField("publicUrl", T("Öffentliche Adresse", "Public address"), "url")
+        var address = new MatField("publicUrl", T("Öffentliche Adresse", "Public address"), "url")
         {
             Max = 300,
             Placeholder = "https://board.example.com",
-            Hint = T("Für die Adressen in E-Mails; leer: die Adresse des Aufrufs.", "For the addresses in mails; empty: the address of the request."),
+            Hint = T("Für geteilte Links und die Adressen in E-Mails; leer: die Adresse des Aufrufs.", "For shared links and the addresses in mails; empty: the address of the request."),
+        };
+        o.Field(publicUrl is null ? address : address with
+        {
+            Fixed = true,
+            Hint = T("Festgelegt durch MAT_PUBLIC_URL (Mattiverse); hier lässt sie sich nicht ändern.", "Set by MAT_PUBLIC_URL (Mattiverse); it cannot be changed here."),
         });
 
         o.LinkAction("openApp", T("Öffnen", "Open"), "external", "/Boards");
         o.LinkAction("openUsers", T("Benutzer", "Users"), "users", "/Admin/Users");
+        o.LinkAction("openConnections", T("Verbindungen", "Connections"), "plug", "/Admin/Connections");
         o.LinkAction("openSystem", T("System", "System"), "settings", "/Admin/System");
         o.PostAction(
             "cleanUp",
@@ -123,6 +163,9 @@ public sealed class MatBoardPlatform(InstanceService instance, ILogger<MatBoardP
             {
                 case "registrationOpen" when value.ValueKind is JsonValueKind.True or JsonValueKind.False:
                     open = value.GetBoolean();
+                    break;
+                case "publicUrl" when settings.AppPublicUrl is not null:
+                    errors[key] = call.T("Festgelegt durch MAT_PUBLIC_URL.", "Set by MAT_PUBLIC_URL.");
                     break;
                 case "publicUrl" when value.ValueKind is JsonValueKind.String:
                     url = value.GetString()!;

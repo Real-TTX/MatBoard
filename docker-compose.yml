@@ -1,6 +1,7 @@
 # MatBoard - Release (branch main, image :latest)
 #   docker compose up -d        ->  http://localhost:3945
-# The first account that registers is the administrator.
+# The first account that registers is the administrator. No variable is needed: MatBoard does its whole job without them.
+# Mattiverse connects the rest by itself (see README); Administration -> Connections shows what is connected.
 name: matboard
 
 services:
@@ -14,11 +15,13 @@ services:
     # Optional, none of them is needed; Mattiverse sets them when it installs MatBoard:
     # environment:
     #   MAT_API_KEY: ""                    # the key of /api/* (platform contract)
-    #   MATIDENTITY_AUTHORITY: ""          # https://id.example.com: sign-in through MatIdentity
+    #   MAT_PUBLIC_URL: ""                 # https://board.example.com: public address (links, mails); fixed on Administration -> System while set
+    #   MAT_FRAME_ANCESTORS: ""            # origins that may show MatBoard in a frame (Mattiverse)
+    #   MATIDENTITY_AUTHORITY: ""          # https://id.example.com: sign-in through MatIdentity (identity.oidc)
     #   MATIDENTITY_CLIENT_ID: "matboard"
     #   MATIDENTITY_CLIENT_SECRET: ""
     #   MATIDENTITY_INTERNAL_URL: ""       # http://matidentity:2300 inside Docker
-    #   MATSMTP_HOST: ""                   # mail about shared boards through MatSMTP
+    #   MATSMTP_HOST: ""                   # mail about shared boards through MatSMTP (mail.smtp)
     #   MATSMTP_PORT: "2025"
     #   MATSMTP_USERNAME: "matboard"
     #   MATSMTP_PASSWORD: ""

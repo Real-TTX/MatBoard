@@ -6,7 +6,10 @@ Guidance for working in this repository. Keep it in sync with the code: update i
 
 A digital whiteboard in the spirit of Miro. Boards are an endless canvas with sticky notes, text, shapes, connectors, frames, pen strokes, pictures, comments (pins with a thread) and stamps. Several people work on a board at the
 same time (live cursors, changes appear as they are made). Boards are shared with people who have an account (editor / viewer) or through a **link** (view / edit, guests give a name).
-Part of the Mat family: sign-in through **MatIdentity**, mail through **MatSMTP**, the platform contract for **Mattiverse** (all optional, switched on by environment variables).
+Part of the Mat family on **MatPlatform 2.2** (platform contract 2, the Mat app model, MatDesign `docs/APP-MODEL.md`): MatBoard **consumes** `identity.oidc` (sign-in through
+**MatIdentity**) and `mail.smtp` (mail through **MatSMTP**), both optional and set by their environment variables; it provides nothing and uses no other app. A broker
+(**Mattiverse**) passes the variables; *Administration → Connections* (`<mat-connections />`) shows them. It **contributes** the launcher MatBoard (quick actions New board,
+My boards, Shared with me) and two admin widgets (Boards, Active users) to a shell. MatBoard works without any of the variables.
 
 Stack: ASP.NET Core on **.NET 10**, C#, **Razor Pages**, EF Core + **PostgreSQL**, the **MatUi** toolkit of the sister project MatDesign (`wwwroot/matui`, copied: never edit by hand), plain
 JavaScript, no build step. Docker-first. Web port **3945** (pgAdmin 3946, local Postgres 3947). UI languages: English and German (catalog in `Resources/Texts/*.json`). Accent: yellow `#ffc21f`
@@ -38,11 +41,15 @@ src/MatBoard
   Services/Accounts/          static too: Profiles (the own account of a person: profile, theme, password), UserAdmin (accounts for administrators; every function checks that the actor is an active administrator; the last administrator stays)
   Services/Mail/MailService  MatSMTP through MailKit, queued in the background; off unless MATSMTP_HOST is set
   Services/Auth/             CurrentUser, PasswordService, SessionService (sessions in the DB), AccountService, ExternalSignInService (MatIdentity), AccountDataService (GDPR export/erase)
-  Services/                  Ui (icons, logo), MenuService, InstanceService (numbers, settings, housekeeping), ListModels (toolbar, pager), Dates, Assets
-  MatPlatform/               copy of the shared package (MatDesign): platform contract, MatIdentity sign-in, back-channel logout, MatSmtpSettings. Never edit here.
-  Platform/                  MatBoardPlatform (tiles, settings, actions for Mattiverse), MatBoardIdentityUsers
+  Services/                  Ui (icons, logo), MenuService, InstanceService (numbers, settings (the public address in force: MAT_PUBLIC_URL ?? stored), housekeeping), ListModels (toolbar, pager), Dates, Assets
+  MatPlatform/               copy of the shared package (MatDesign, 2.2.1; tools/matplatform-copy.js): platform contract 2, bindings (MatBindings, the store in
+                             /data/matplatform/bindings.json), the Connections area (<mat-connections />), MatIdentity sign-in, back-channel logout, MatSmtpSettings,
+                             MAT_FRAME_ANCESTORS. Never edit here.
+  Platform/                  MatBoardPlatform (the description: tiles, settings, actions, consumes identity.oidc + mail.smtp, launcher MatBoard + quick actions,
+                             admin widgets boards/users; publicUrl fixed while MAT_PUBLIC_URL is set), MatBoardIdentityUsers
   Controls/                  ONE code base per control: <mb-field>, <mb-buttons>, <mb-table>, <mb-tabs>/<mb-tab>
-  Pages/                     Boards/ (Index, Edit, Members, Share = three tabs of one board, Canvas), Public/Board (link /b/{token}), Account/, Admin/ (Users, System), About, Shared/ (_Layout, _LayoutBoard, _Board = canvas chrome)
+  Pages/                     Boards/ (Index, Edit, Members, Share = three tabs of one board, Canvas), Public/Board (link /b/{token}), Account/, Admin/ (Users,
+                             Connections (<mat-connections />), System (the public address read-only while MAT_PUBLIC_URL is set)), About, Shared/ (_Layout, _LayoutBoard, _Board = canvas chrome)
   Resources/Texts/           the text catalog (en + de); keys of areas Boards, Canvas, Members, Share, About, Mail, Js (for scripts) ...
   wwwroot/js/board-core.js   state, drawing (SVG), geometry, applying changes, history (undo/redo). Item = {id,k,x,y,w,h,r,z,d}; op = add | upd | del; null in d removes a key
   wwwroot/js/board-net.js    snapshot load (+ copy in Cache Storage "mb-boards"), WebSocket, queue of unconfirmed ops (localStorage mb.q.<board>, replayed after reconnect), presence, cursors
@@ -50,7 +57,8 @@ src/MatBoard
   wwwroot/js/board-extras.js the side panel (templates, comment threads, frames, search), presenting frames, minimap, following a person, summon, the tooltips of the board (one floating .mb-tip kept inside the window; the toolkit's ::after tips are off on the board)
   wwwroot/css/app.css        accent + few app styles (prefix mb-);  board.css = the board page
   wwwroot/sw.js              service worker: static cache, last board pages offline, offline.html; clears on sign-out (pwa.js)
-tests/MatBoard.Tests         unit + database tests
+tests/MatBoard.Tests         unit + database tests (PlatformTests: the definition against the MatUi sprite, consumes, contributions; PlatformAppTests: the app in
+                             memory on a test database: /api, /api/connections, the Connections page for administrators only, MAT_PUBLIC_URL)
 ```
 
 ## Conventions
@@ -61,7 +69,8 @@ for an item (so others can refer to it, e.g. the ends of a connector); the conte
 
 **Security**: every board query goes through `BoardAccess`; a board you may not see answers 404. Every WebSocket batch re-checks the right (`BoardItems.ApplyAsync`); `BoardRooms.Revalidate`
 runs after members/link change. Pictures are bitmap data addresses only. The CSP forbids inline script and style (scripts set styles through the CSSOM). Text is always put into the page with
-`textContent`, never as HTML. Mail addresses are never logged in full.
+`textContent`, never as HTML. Mail addresses are never logged in full. The Connections area and its form (`/api/connections/form`) are for administrators only
+(`MatPlatformOptions.ConnectionsAccess` = the role Admin). `MAT_FRAME_ANCESTORS` (MatPlatform) replaces `frame-ancestors 'none'` / `X-Frame-Options` of `SecurityHeaders` when set.
 
 **UI (MatDesign rules)**: CRUD = list page (toolbar above, table, pager under it, actions left below) + separate edit page (Save, Back, space, Delete); a board has three **tabs** (General, People, Link) that
 are pages of their own. Icons via `Ui.Icon` (toolkit sprite + `wwwroot/img/app-icons.svg`; a missing name is a bug). Every `td` has `data-label`. The version at the foot of the menu links to `/About`.
